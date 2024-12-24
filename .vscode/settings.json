@@ -1,4 +1,7 @@
 {
     "cph.general.saveLocation": "",
-    // "vscoq.args": ["-Q", ".", "LF"]
+    "vscoq.args": [
+        "-Q", "/home/charlie/Coq/LF", "LF",
+        "-Q", "/home/charlie/Coq/VC", "VC"
+    ]
 }
