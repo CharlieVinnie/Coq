@@ -667,7 +667,7 @@ Qed.
 (** **** Exercise: 2 stars, standard (ev_sum) *)
 Theorem ev_sum : forall n m, ev n -> ev m -> ev (n + m).
 Proof.
-  Hint Constructors ev.
+  Hint Constructors ev : core.
   intros;induction H;crush.
 Qed.
 (** [] *)
@@ -706,6 +706,8 @@ Proof.
 Qed.
 (** [] *)
 
+Hint Constructors ev : core.
+
 (** **** Exercise: 3 stars, advanced, especially useful (ev_ev__ev) *)
 Theorem ev_ev__ev : forall n m,
   ev (n+m) -> ev n -> ev m.
@@ -723,15 +725,22 @@ Qed.
     But, you will need a clever assertion and some tedious rewriting.
     Hint: Is [(n+m) + (n+p)] even? *)
 
+Lemma ev_n_n : forall n, ev (n+n).
+Proof.
+  Hint Resolve evSS_ev : core.
+  Hint Rewrite <- plus_n_Sm : core.
+  induction n;crush.
+Qed.
+
 Theorem ev_plus_plus : forall n m p,
   ev (n+m) -> ev (n+p) -> ev (m+p).
 Proof.
-  Hint Constructors ev.
-  Hint Resolve add_assoc.
-  assert (forall n m p,ev (n+m)->ev (n+p)->ev ((n+m)+(n+p))) by crush.
-  assert (forall n,ev(n+n)). admit.
-  (* crush. specialize (H _ _ _ H0 H1). *)
-Admitted.
+  Hint Resolve ev_sum ev_ev__ev ev_n_n : core.
+  intros. assert (ev ((n+m)+(n+p)) ) by crush.
+  assert (HH: n+m+(n+p)=(n+n)+(m+p)) by crush.
+  rewrite HH in *. crush;eauto.
+Qed.
+  
 (** [] *)
 
 (* ################################################################# *)
