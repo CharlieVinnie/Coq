@@ -2,6 +2,7 @@
     "cph.general.saveLocation": "",
     "vscoq.args": [
         "-Q", "/home/charlie/Coq/LF", "LF",
+        "-Q", "/home/charlie/Coq/PLF", "PLF",
         "-Q", "/home/charlie/Coq/VC", "VC"
     ]
 }
