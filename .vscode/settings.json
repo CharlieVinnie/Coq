@@ -3,6 +3,7 @@
     "vscoq.args": [
         "-Q", "/home/charlie/Coq/LF", "LF",
         "-Q", "/home/charlie/Coq/PLF", "PLF",
-        "-Q", "/home/charlie/Coq/VC", "VC"
+        "-Q", "/home/charlie/Coq/VC", "VC",
+        "-Q", "/home/charlie/TLC/tlc/src", "TLC"
     ]
 }
