@@ -2,7 +2,8 @@
 
 Set Warnings "-notation-overridden,-parsing,-deprecated-hint-without-locality".
 From LF Require Export Logic.
-From LF.Crush Require Export Crush.
+From CRUSH Require Export Crush.
+From TLC Require Import LibTactics.
 
 (* ################################################################# *)
 (** * Inductively Defined Propositions *)
@@ -737,8 +738,7 @@ Theorem ev_plus_plus : forall n m p,
 Proof.
   Hint Resolve ev_sum ev_ev__ev ev_n_n : core.
   intros. assert (ev ((n+m)+(n+p)) ) by crush.
-  assert (HH: n+m+(n+p)=(n+n)+(m+p)) by crush.
-  rewrite HH in *. crush;eauto.
+  asserts_rewrite (n+m+(n+p)=(n+n)+(m+p)) in *; [crush|eauto].
 Qed.
   
 (** [] *)
@@ -817,12 +817,17 @@ End Playground.
     between every pair of natural numbers. *)
 
 Inductive total_relation : nat -> nat -> Prop :=
-  (* FILL IN HERE *)
+  | Total_L n : total_relation 0 n
+  | Total_R n : total_relation n 0
+  | Total_S n m : total_relation n m -> total_relation (S n) (S m)
 .
 
+Hint Constructors total_relation : core.
+
 Theorem total_relation_is_total : forall n m, total_relation n m.
-  Proof.
-  (* FILL IN HERE *) Admitted.
+Proof.
+  induction n;induction m;crush.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (empty_relation)
@@ -830,13 +835,12 @@ Theorem total_relation_is_total : forall n m, total_relation n m.
     Define an inductive binary relation [empty_relation] (on numbers)
     that never holds. *)
 
-Inductive empty_relation : nat -> nat -> Prop :=
-  (* FILL IN HERE *)
-.
+Inductive empty_relation : nat -> nat -> Prop := .
 
 Theorem empty_relation_is_empty : forall n m, ~ empty_relation n m.
-  Proof.
-  (* FILL IN HERE *) Admitted.
+Proof.
+  crush.
+Qed.
 (** [] *)
 
 (** From the definition of [le], we can sketch the behaviors of
@@ -858,100 +862,97 @@ Theorem empty_relation_is_empty : forall n m, ~ empty_relation n m.
 (** **** Exercise: 5 stars, standard, optional (le_and_lt_facts) *)
 Lemma le_trans : forall m n o, m <= n -> n <= o -> m <= o.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  crush.
+Qed.
 
 Theorem O_le_n : forall n,
   0 <= n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  crush.
+Qed.
 
 Theorem n_le_m__Sn_le_Sm : forall n m,
   n <= m -> S n <= S m.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. crush. Qed.
 
 Theorem Sn_le_Sm__n_le_m : forall n m,
   S n <= S m -> n <= m.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. crush. Qed.
 
 Theorem lt_ge_cases : forall n m,
   n < m \/ n >= m.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. crush. Qed.
 
 Theorem le_plus_l : forall a b,
   a <= a + b.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. crush. Qed.
 
 Theorem plus_le : forall n1 n2 m,
   n1 + n2 <= m ->
   n1 <= m /\ n2 <= m.
-Proof.
- (* FILL IN HERE *) Admitted.
+Proof. crush. Qed.
 
 Theorem add_le_cases : forall n m p q,
   n + m <= p + q -> n <= p \/ m <= q.
   (** Hint: May be easiest to prove by induction on [n]. *)
-Proof.
-(* FILL IN HERE *) Admitted.
+Proof. crush. Qed.
 
 Theorem plus_le_compat_l : forall n m p,
   n <= m ->
   p + n <= p + m.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. crush. Qed.
 
 Theorem plus_le_compat_r : forall n m p,
   n <= m ->
   n + p <= m + p.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. crush. Qed.
 
 Theorem le_plus_trans : forall n m p,
   n <= m ->
   n <= m + p.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. crush. Qed.
 
 Theorem n_lt_m__n_le_m : forall n m,
   n < m ->
   n <= m.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. crush. Qed.
 
 Theorem plus_lt : forall n1 n2 m,
   n1 + n2 < m ->
   n1 < m /\ n2 < m.
-Proof.
-(* FILL IN HERE *) Admitted.
+Proof. crush. Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, standard, optional (more_le_exercises) *)
 Theorem leb_complete : forall n m,
   n <=? m = true -> n <= m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction n;induction m;crush.
+Qed.
 
 Theorem leb_correct : forall n m,
   n <= m ->
   n <=? m = true.
   (** Hint: May be easiest to prove by induction on [m]. *)
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction n;induction m;crush.
+Qed.
 
 (** Hint: The next two can easily be proved without using [induction]. *)
 
 Theorem leb_iff : forall n m,
   n <=? m = true <-> n <= m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction n;induction m.
+  crush. crush. crush. crush' n_le_m__Sn_le_Sm fail. crush.
+  induction n;crush;induction m;crush' n_le_m__Sn_le_Sm fail.
+Qed.
 
 Theorem leb_true_trans : forall n m o,
   n <=? m = true -> m <=? o = true -> n <=? o = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  Hint Rewrite leb_iff. Hint Resolve le_trans. crush.
+Qed.
 (** [] *)
 
 Module R.
@@ -994,12 +995,11 @@ Definition manual_grade_for_R_provability : option (nat*string) := None.
     Figure out which function; then state and prove this equivalence
     in Coq. *)
 
-Definition fR : nat -> nat -> nat
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition fR : nat -> nat -> nat := fun n m => n+m.
 
 Theorem R_equiv_fR : forall m n o, R m n o <-> fR m n = o.
 Proof.
-(* FILL IN HERE *) Admitted.
+  Hint Constructors R.
 (** [] *)
 
 End R.
