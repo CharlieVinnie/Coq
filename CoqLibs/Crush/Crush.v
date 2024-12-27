@@ -246,3 +246,5 @@ Ltac guess v H :=
 Ltac guessKeep v H :=
   let H' := fresh "H'" in
     generalize H; intro H'; guess v H'.
+
+Ltac Crush := timeout 5 crush.

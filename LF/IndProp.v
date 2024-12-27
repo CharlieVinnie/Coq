@@ -944,7 +944,12 @@ Theorem leb_iff : forall n m,
   n <=? m = true <-> n <= m.
 Proof.
   induction n;induction m.
-  crush. crush. crush. crush' n_le_m__Sn_le_Sm fail. crush.
+  crush. crush. crush. split.
+  - intro. clear IHn. clear H. 
+    destruct IHm.
+    assert (forall m:nat, (n<=?m)=true -> (n<=?m) = true). Crush.
+    assert (forall m:nat, (n<=?m) = true -> (n<=?m)=true). Crush.
+    clear IHn. Crush.
   induction n;crush;induction m;crush' n_le_m__Sn_le_Sm fail.
 Qed.
 
