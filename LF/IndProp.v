@@ -995,9 +995,19 @@ Definition manual_grade_for_R_provability : option (nat*string) := None.
 
 Definition fR : nat -> nat -> nat := fun n m => n+m.
 
+Hint Constructors R : core.
+
+Lemma R_0_n_n : forall n, R 0 n n.
+Proof. induction n;crush. Qed.
+
+Hint Resolve R_0_n_n : core.
+
 Theorem R_equiv_fR : forall m n o, R m n o <-> fR m n = o.
 Proof.
-  Hint Constructors R.
+  unfold fR. split.
+  - induction 1;crush.
+  - crush;induction m;induction n;crush.
+Qed.
 (** [] *)
 
 End R.
@@ -1039,24 +1049,43 @@ End R.
       is a subsequence of [l3], then [l1] is a subsequence of [l3]. *)
 
 Inductive subseq : list nat -> list nat -> Prop :=
-(* FILL IN HERE *)
+  | Subnil l : subseq [] l
+  | Subskip x l1 l2 : subseq l1 l2 -> subseq l1 (x::l2)
+  | Subtrim x l1 l2 : subseq l1 l2 -> subseq (x::l1) (x::l2)
 .
 
+Hint Constructors subseq : core.
+
 Theorem subseq_refl : forall (l : list nat), subseq l l.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. induction l;crush. Qed.
+
+Hint Resolve subseq_refl : core.
 
 Theorem subseq_app : forall (l1 l2 l3 : list nat),
   subseq l1 l2 ->
   subseq l1 (l2 ++ l3).
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. induction 1;crush. Qed.
+
+Lemma add_subseq : forall x l1 l2, subseq (x::l1) l2 -> subseq l1 l2.
+Proof. intros x l1 l2. remember (x::l1) as l. induction 1;crush. Qed.
+
+Hint Resolve add_subseq : core.
+
+(* Lemma subseq_x_l : forall x l1 l2 l3, subseq l1 l2 -> subseq (x::l2) l3 -> subseq (x::l1) l3.
+Proof. introv.  *)
+
+(* Hint Resolve subseq_x_l : core. *)
 
 Theorem subseq_trans : forall (l1 l2 l3 : list nat),
   subseq l1 l2 ->
   subseq l2 l3 ->
   subseq l1 l3.
 Proof.
+  intros l1 l2 l3 H1. generalize dependent l3.
+  induction H1;crush;eauto.
+Qed.
+
+  
   (* Hint: be careful about what you are doing induction on and which
      other things need to be generalized... *)
   (* FILL IN HERE *) Admitted.
