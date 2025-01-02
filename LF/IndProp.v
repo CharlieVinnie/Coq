@@ -1181,6 +1181,8 @@ Arguments App {T} _ _.
 Arguments Union {T} _ _.
 Arguments Star {T} _.
 
+Hint Constructors reg_exp : core.
+
 (** Note that this definition is _polymorphic_: Regular
     expressions in [reg_exp T] describe strings with characters drawn
     from [T] -- that is, lists of elements of [T].
@@ -1241,6 +1243,8 @@ Inductive exp_match {T} : list T -> reg_exp T -> Prop :=
                : (s1 ++ s2) =~ (Star re)
 
   where "s =~ re" := (exp_match s re).
+
+Hint Constructors exp_match : core.
 
 (** Notice that these rules are not _quite_ the same as the
     informal ones that we gave at the beginning of the section.
@@ -1326,6 +1330,8 @@ Proof.
   - apply MStar0.
 Qed.
 
+Hint Resolve MStar1 : core.
+
 (** (Note the use of [app_nil_r] to change the goal of the theorem to
     exactly the shape expected by [MStarApp].) *)
 
@@ -1337,14 +1343,12 @@ Qed.
 
 Lemma empty_is_empty : forall T (s : list T),
   ~ (s =~ EmptySet).
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. inversion 1. Qed.
 
 Lemma MUnion' : forall T (s : list T) (re1 re2 : reg_exp T),
   s =~ re1 \/ s =~ re2 ->
   s =~ Union re1 re2.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. crush. Qed.
 
 (** The next lemma is stated in terms of the [fold] function from the
     [Poly] chapter: If [ss : list (list T)] represents a sequence of
@@ -1354,8 +1358,7 @@ Proof.
 Lemma MStar' : forall T (ss : list (list T)) (re : reg_exp T),
   (forall s, In s ss -> s =~ re) ->
   fold app ss [] =~ Star re.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. Induct 2;crush. Qed.
 (** [] *)
 
 (** Since the definition of [exp_match] has a recursive

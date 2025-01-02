@@ -254,3 +254,9 @@ Ltac guessKeep v H :=
     generalize H; intro H'; guess v H'.
 
 Ltac Crush := timeout 5 crush.
+
+Ltac Induct n :=
+  match n with
+  | 1 => match goal with | [ |- forall x, _ ] => induction x end
+  | S ?n' => match goal with | [ |- forall x, _ ] => intros x;Induct n' end
+  end.
