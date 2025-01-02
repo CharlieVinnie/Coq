@@ -1081,8 +1081,9 @@ Theorem subseq_trans : forall (l1 l2 l3 : list nat),
   subseq l2 l3 ->
   subseq l1 l3.
 Proof.
-  intros l1 l2 l3 H1. generalize dependent l3.
-  induction H1;crush;eauto.
+  intros l1 l2 l3 H1 H2. generalize dependent l1. induction H2;crush.
+  
+  inversion H1;crush.
 Qed.
 
   

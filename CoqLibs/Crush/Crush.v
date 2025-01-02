@@ -180,11 +180,11 @@ Ltac crush' lemmas invOne :=
                 match P with
                   | context[JMeq] => fail 1 (** JMeq is too fancy to deal with here. *)
                   (* | _ => rewrite H by crush' lemmas invOne *)
-                  | ?x = ?y => rewrite H by crush' lemmas invOne 
-                  | forall t1, ?x = ?y => rewrite H by crush' lemmas invOne 
-                  | forall t1 t2, ?x = ?y => rewrite H by crush' lemmas invOne 
-                  | forall t1 t2 t3, ?x = ?y => rewrite H by crush' lemmas invOne 
-                  | forall t1 t2 t3 t4, ?x = ?y => rewrite H by crush' lemmas invOne 
+                  | _ = _ => rewrite H by crush' lemmas invOne 
+                  | forall t1, _ = _ => rewrite H by crush' lemmas invOne 
+                  | forall t1 t2, _ = _ => rewrite H by crush' lemmas invOne 
+                  | forall t1 t2 t3, _ = _ => rewrite H by crush' lemmas invOne 
+                  | forall t1 t2 t3 t4, _ = _ => rewrite H by crush' lemmas invOne 
                   (* This part is refactored, due to rewrite sometimes acts like apply :( *)
                 end
             end; autorewrite with core in *) in
