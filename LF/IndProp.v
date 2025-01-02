@@ -1350,6 +1350,8 @@ Lemma MUnion' : forall T (s : list T) (re1 re2 : reg_exp T),
   s =~ Union re1 re2.
 Proof. crush. Qed.
 
+Hint Resolve MUnion' : core.
+
 (** The next lemma is stated in terms of the [fold] function from the
     [Poly] chapter: If [ss : list (list T)] represents a sequence of
     strings [s1, ..., sn], then [fold app ss []] is the result of
@@ -1360,6 +1362,8 @@ Lemma MStar' : forall T (ss : list (list T)) (re : reg_exp T),
   fold app ss [] =~ Star re.
 Proof. Induct 2;crush. Qed.
 (** [] *)
+
+Hint Resolve MStar' : core.
 
 (** Since the definition of [exp_match] has a recursive
     structure, we might expect that proofs involving regular
@@ -1447,14 +1451,38 @@ Qed.
     regular expression matches some string. Prove that your function
     is correct. *)
 
-Fixpoint re_not_empty {T : Type} (re : reg_exp T) : bool
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint re_not_empty {T : Type} (re : reg_exp T) : bool :=
+  match re with
+  | EmptySet => false
+  | EmptyStr => true
+  | Char _ => true
+  | App r1 r2 => re_not_empty r1 && re_not_empty r2
+  | Union r1 r2 => re_not_empty r1 || re_not_empty r2
+  | Star r => true
+  end.
+
+Lemma sth_or_true_is_true : forall b, b || true = true.
+Proof. intros [];crush. Qed.
+
+Hint Resolve sth_or_true_is_true : core.
+
+Hint Resolve andb_true_iff : core.
 
 Lemma re_not_empty_correct : forall T (re : reg_exp T),
   (exists s, s =~ re) <-> re_not_empty re = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  crush. match goal with | [ H : _ =~ _ |- _ ] => induction H end;crush.
+  induction re;crush;eauto;
+  repeat (
+    match goal with
+    | [ H : _ && _ = true |- _ ] => rewrite andb_true_iff in H
+    | [ H : _ || _ = true |- _ ] => rewrite orb_true_iff in H
+    end;crush;eauto
+  ).
+Qed.
 (** [] *)
+
+Hint Resolve re_not_empty_correct : core.
 
 (* ================================================================= *)
 (** ** The [remember] Tactic *)
@@ -1577,6 +1605,8 @@ Proof.
       * apply H1.
 Qed.
 
+Hint Resolve star_app : core.
+
 (** **** Exercise: 4 stars, standard, optional (exp_match_ex2) *)
 
 (** The [MStar''] lemma below (combined with its converse, the
@@ -1589,7 +1619,10 @@ Lemma MStar'' : forall T (s : list T) (re : reg_exp T),
     s = fold app ss []
     /\ forall s', In s' ss -> s' =~ re.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. remember (Star re) as re0. induction H;crush.
+  exists (@nil (list T));crush.
+  exists (s1::x);crush.
+Qed.
 (** [] *)
 
 (** **** Exercise: 5 stars, advanced (weak_pumping)
@@ -1715,14 +1748,18 @@ Lemma weak_pumping : forall T (re : reg_exp T) s,
     were in an optional exercise earlier in this chapter may also be
     useful. *)
 Proof.
-  intros T re s Hmatch.
+  intros. induction H;crush;eauto.
+  - cuts HH : (pumping_constant re1 <= length s1 /\ pumping_constant re2 <= length s2).
+    crush. exists (x2++x3++x4++x), x0, x1. crush. repeat rewrite app_assoc;crush.
+    specialize (H9 1). crush. repeat rewrite app_assoc in *;crush.
+  (* intros T re s Hmatch.
   induction Hmatch
     as [ | x | s1 re1 s2 re2 Hmatch1 IH1 Hmatch2 IH2
        | s1 re1 re2 Hmatch IH | re1 s2 re2 Hmatch IH
        | re | s1 s2 re Hmatch1 IH1 Hmatch2 IH2 ].
   - (* MEmpty *)
     simpl. intros contra. inversion contra.
-  (* FILL IN HERE *) Admitted.
+  (* FILL IN HERE *) Admitted. *)
 (** [] *)
 
 (** **** Exercise: 5 stars, advanced, optional (pumping)
