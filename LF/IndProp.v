@@ -1081,15 +1081,14 @@ Theorem subseq_trans : forall (l1 l2 l3 : list nat),
   subseq l2 l3 ->
   subseq l1 l3.
 Proof.
-  intros l1 l2 l3 H1 H2. generalize dependent l1. induction H2;crush.
-  
-  inversion H1;crush.
+  introv H1 H2; generalize dependent l1.
+  induction H2;crush;
+  repeat (match goal with
+    | [ H : subseq _ [] |- _ ] => inversion H
+    | [ H : subseq _ (_::_) |- _ ] => inversion H
+  end;crush).
 Qed.
 
-  
-  (* Hint: be careful about what you are doing induction on and which
-     other things need to be generalized... *)
-  (* FILL IN HERE *) Admitted.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (R_provability2)
