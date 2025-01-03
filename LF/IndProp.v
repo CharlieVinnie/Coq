@@ -1,9 +1,10 @@
 (** * IndProp: Inductively Defined Propositions *)
 
-Set Warnings "-notation-overridden,-parsing,-deprecated-hint-without-locality".
-From LF Require Export Logic.
 From CRUSH Require Export Crush.
 From TLC Require Import LibTactics.
+
+Set Warnings "-notation-overridden,-parsing,-deprecated-hint-without-locality".
+From LF Require Export Logic.
 
 (* ################################################################# *)
 (** * Inductively Defined Propositions *)
