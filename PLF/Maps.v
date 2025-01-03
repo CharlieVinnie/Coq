@@ -37,6 +37,9 @@ From Coq Require Import Lists.List.
 Import ListNotations.
 Set Default Goal Selector "!".
 
+From CRUSH Require Import Crush.
+From TLC Require Import LibTactics.
+
 (** Documentation for the standard library can be found at
     https://coq.inria.fr/library/.
 
@@ -110,6 +113,8 @@ Definition total_map (A : Type) := string -> A.
 Definition t_empty {A : Type} (v : A) : total_map A :=
   (fun _ => v).
 
+Hint Unfold t_empty : core.
+
 (** More interesting is the map-updating function, which (as always)
     takes a map [m], a key [x], and a value [v] and returns a new map
     that takes [x] to [v] and takes every other key to whatever [m]
@@ -119,6 +124,8 @@ Definition t_empty {A : Type} (v : A) : total_map A :=
 Definition t_update {A : Type} (m : total_map A)
                     (x : string) (v : A) :=
   fun x' => if String.eqb x x' then v else m x'.
+
+Hint Unfold t_update : core.
 
 (** This definition is a nice example of higher-order programming:
     [t_update] takes a _function_ [m] and yields a new function
@@ -187,8 +194,7 @@ Proof. reflexivity. Qed.
 
 Lemma t_apply_empty : forall (A : Type) (x : string) (v : A),
   (_ !-> v) x = v.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. crush. Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (t_update_eq)
@@ -197,10 +203,25 @@ Proof.
     and then look up [x] in the map resulting from the [update], we
     get back [v]: *)
 
+Hint Extern 1 =>
+  match goal with
+  | [ |- context[t_update] ] => unfold t_update
+  end : core.
+
+
+(* Unset Printing Notations. *)
+
 Lemma t_update_eq : forall (A : Type) (m : total_map A) x v,
   (x !-> v ; m) x = v.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  match goal with
+  | [ |- context[t_update] ] => idtac "hello"
+  end.
+  crush.
+  unfold t_update.
+  Print HintDb core.
+  Search eqb.
+  Info 10 crush' String.eqb_refl fail. Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (t_update_neq)

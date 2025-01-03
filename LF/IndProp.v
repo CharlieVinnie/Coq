@@ -1749,7 +1749,7 @@ Lemma weak_pumping : forall T (re : reg_exp T) s,
     useful. *)
 Proof.
   intros. induction H;crush;eauto.
-  - cuts HH : (pumping_constant re1 <= length s1 /\ pumping_constant re2 <= length s2).
+  - cuts HH : (pumping_constant re1 <= length s1 \/ pumping_constant re2 <= length s2).
     crush. exists (x2++x3++x4++x), x0, x1. crush. repeat rewrite app_assoc;crush.
     specialize (H9 1). crush. repeat rewrite app_assoc in *;crush.
   (* intros T re s Hmatch.

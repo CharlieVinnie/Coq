@@ -253,6 +253,9 @@ Ltac guessKeep v H :=
   let H' := fresh "H'" in
     generalize H; intro H'; guess v H'.
 
+
+(** My Tactics & Hints *)
+
 Ltac Crush := timeout 5 crush.
 
 Ltac Induct n :=
@@ -260,3 +263,10 @@ Ltac Induct n :=
   | 1 => match goal with | [ |- forall x, _ ] => induction x end
   | S ?n' => match goal with | [ |- forall x, _ ] => intros x;Induct n' end
   end.
+
+From Coq Require Import Arith.Arith.
+
+Hint Extern 1 =>
+  match goal with
+  | [ |- context[?x =? ?x] ] => rewrite Nat.eqb_refl
+  end : core.
