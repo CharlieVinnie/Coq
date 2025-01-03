@@ -1747,6 +1747,9 @@ Lemma weak_pumping : forall T (re : reg_exp T) s,
     s2 <> [] /\
     forall m, s1 ++ napp m s2 ++ s3 =~ re.
 
+Lemma list_app_progress : forall (T:Type) (a b c d:list T), (a++b)++c++d = (a++b++c)++d.
+Proof. intros;repeat rewrite app_assoc;reflexivity. Qed.
+
 (** Complete the proof below. Several of the lemmas about [le] that
     were in an optional exercise earlier in this chapter may also be
     useful. *)
@@ -1757,37 +1760,42 @@ Proof.
     | [ H : ?x + ?y <= ?a + ?b |- _ ] => apply add_le_cases in H
     | [ H: forall m:nat, ?a ++ napp m ?b ++ ?c =~ ?d |- _ ] =>
       match goal with
-      | [ H0 : a ++ napp 1 b ++ c =~ d |- _ ] => fail 1
-      (* | [ |- _ ] => let H' := fresh "H" in specialize (H 1) as H' *)
-      (* | [ |- _ ] => specialize (H 1) *)
+      | [ H0 : done H |- _ ] => fail 1
+      | [ |- _ ] =>
+        assert (done H) by constructor;
+        let H' := fresh "H" in specialize (H 1) as H'
       end
     end;crush
-  ).
+  ). un_done.
   - exists x, x0, (x1++s2). crush;try solve_apps.
-      try match goal with
-      | [ H: forall m:nat, ?a ++ napp m ?b ++ ?c =~ ?d |- _ ] =>
-        match goal with
-        | [ H0 : a ++ napp 1 b ++ c =~ d |- _ ] => fail 1
-        | [ |- _ ] => let H' := fresh "H" in specialize (H 1) as H'
-        (* | [ |- _ ] => specialize (H 1) *)
+    specialize (H5 m).
+    Print app_assoc.
+    repeat rewrite <- app_assoc in *. simpl in *.
+    Search ( (_ ++ _) ++ _ ++ _ = (_ ++ _ ++ _ ) ++ _ ).
+    (* rewrite app_assoc.
+    rewrite list_app_progress.
+    sets_eq a: (x++napp m x0++x1). crush. *)
+    do 3 try match goal with
+      | [ H : ?a =~ _ |- context [?a ++ _] ] =>
+        let a' := fresh "a" in
+          sets_eq a': a
+      | [ |- context [?ab ++ ?cd] ] =>
+        match ab with
+        | ?a ++ ?b =>
+          match cd with
+          | ?c ++ ?d => rewrite list_app_progress
+          | _ => fail 3
+          end
+        | _ => first [ rewrite app_assoc | fail 2 ]
         end
-      end;crush.
+    end.
+    repeat (
       try match goal with
-      | [ H: forall m:nat, ?a ++ napp m ?b ++ ?c =~ ?d |- _ ] =>
-        match goal with
-        | [ H0 : a ++ napp 1 b ++ c =~ d |- _ ] => fail 1
-        | [ |- _ ] => let H' := fresh "H" in specialize (H 1) as H'
-        (* | [ |- _ ] => specialize (H 1) *)
-        end
-      end;crush.
-      try match goal with
-      | [ H: forall m:nat, ?a ++ napp m ?b ++ ?c =~ ?d |- _ ] =>
-        match goal with
-        | [ H0 : a ++ napp 1 b ++ c =~ d |- _ ] => fail 1
-        | [ |- _ ] => let H' := fresh "H" in specialize (H 1) as H'
-        (* | [ |- _ ] => specialize (H 1) *)
-        end
-      end;crush.
+      | [ H : ?a ++ ?b =~ _ |- context [ ?a ++ ?b ++ ?c ] ] =>
+
+      | [ |- context [ ?a ++ ?b ++ ?c ] ] => rewrite app_assoc
+      end
+    ).
   (* intros T re s Hmatch.
   induction Hmatch
     as [ | x | s1 re1 s2 re2 Hmatch1 IH1 Hmatch2 IH2
