@@ -213,15 +213,7 @@ Hint Extern 1 =>
 
 Lemma t_update_eq : forall (A : Type) (m : total_map A) x v,
   (x !-> v ; m) x = v.
-Proof.
-  match goal with
-  | [ |- context[t_update] ] => idtac "hello"
-  end.
-  crush.
-  unfold t_update.
-  Print HintDb core.
-  Search eqb.
-  Info 10 crush' String.eqb_refl fail. Qed.
+Proof. crush. Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (t_update_neq)

@@ -265,8 +265,14 @@ Ltac Induct n :=
   end.
 
 From Coq Require Import Arith.Arith.
+Require Export Coq.Strings.String.
 
 Hint Extern 1 =>
   match goal with
-  | [ |- context[?x =? ?x] ] => rewrite Nat.eqb_refl
+  | [ |- context[Nat.eqb ?x ?x] ] => rewrite Nat.eqb_refl
+  end : core.
+
+Hint Extern 1 =>
+  match goal with
+  | [ |- context[String.eqb ?x ?x] ] => rewrite String.eqb_refl
   end : core.
