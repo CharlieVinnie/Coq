@@ -139,6 +139,12 @@ Ltac inster e trace :=
               let T := type of e in
                 match type of T with
                   | Prop =>
+
+                    (** Charlie: A small modification to eliminate duplicate proofs *)
+                    match goal with
+                    | [ H: e |- _ ] => fail 2
+                    end;
+
                     (** [e] should be thought of as a proof, so let's add it to the context, and also add a new marker hypothesis recording our choice of trace. *)
                     generalize e; intro;
                       assert (done (trace, tt)) by constructor

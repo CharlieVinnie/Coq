@@ -1737,6 +1737,8 @@ Qed.
     a (constructive!) way to generate strings matching [re] that are
     as long as we like. *)
 
+Ltac solve_apps := repeat rewrite app_assoc; reflexivity.
+
 Lemma weak_pumping : forall T (re : reg_exp T) s,
   s =~ re ->
   pumping_constant re <= length s ->
@@ -1749,10 +1751,43 @@ Lemma weak_pumping : forall T (re : reg_exp T) s,
     were in an optional exercise earlier in this chapter may also be
     useful. *)
 Proof.
-  intros. induction H;crush;eauto.
-  - cuts HH : (pumping_constant re1 <= length s1 \/ pumping_constant re2 <= length s2).
-    crush. exists (x2++x3++x4++x), x0, x1. crush. repeat rewrite app_assoc;crush.
-    specialize (H9 1). crush. repeat rewrite app_assoc in *;crush.
+  intros. induction H;crush;eauto;try rewrite app_length in *.
+  repeat (
+    try match goal with
+    | [ H : ?x + ?y <= ?a + ?b |- _ ] => apply add_le_cases in H
+    | [ H: forall m:nat, ?a ++ napp m ?b ++ ?c =~ ?d |- _ ] =>
+      match goal with
+      | [ H0 : a ++ napp 1 b ++ c =~ d |- _ ] => fail 1
+      (* | [ |- _ ] => let H' := fresh "H" in specialize (H 1) as H' *)
+      (* | [ |- _ ] => specialize (H 1) *)
+      end
+    end;crush
+  ).
+  - exists x, x0, (x1++s2). crush;try solve_apps.
+      try match goal with
+      | [ H: forall m:nat, ?a ++ napp m ?b ++ ?c =~ ?d |- _ ] =>
+        match goal with
+        | [ H0 : a ++ napp 1 b ++ c =~ d |- _ ] => fail 1
+        | [ |- _ ] => let H' := fresh "H" in specialize (H 1) as H'
+        (* | [ |- _ ] => specialize (H 1) *)
+        end
+      end;crush.
+      try match goal with
+      | [ H: forall m:nat, ?a ++ napp m ?b ++ ?c =~ ?d |- _ ] =>
+        match goal with
+        | [ H0 : a ++ napp 1 b ++ c =~ d |- _ ] => fail 1
+        | [ |- _ ] => let H' := fresh "H" in specialize (H 1) as H'
+        (* | [ |- _ ] => specialize (H 1) *)
+        end
+      end;crush.
+      try match goal with
+      | [ H: forall m:nat, ?a ++ napp m ?b ++ ?c =~ ?d |- _ ] =>
+        match goal with
+        | [ H0 : a ++ napp 1 b ++ c =~ d |- _ ] => fail 1
+        | [ |- _ ] => let H' := fresh "H" in specialize (H 1) as H'
+        (* | [ |- _ ] => specialize (H 1) *)
+        end
+      end;crush.
   (* intros T re s Hmatch.
   induction Hmatch
     as [ | x | s1 re1 s2 re2 Hmatch1 IH1 Hmatch2 IH2
