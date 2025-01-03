@@ -1,1 +1,3 @@
 -Q . PLF 
+-Q /home/charlie/Coq/CoqLibs/Crush CRUSH
+-Q /home/charlie/Coq/CoqLibs/tlc/src TLC

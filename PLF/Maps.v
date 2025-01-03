@@ -216,6 +216,8 @@ Lemma t_update_eq : forall (A : Type) (m : total_map A) x v,
 Proof. crush. Qed.
 (** [] *)
 
+Hint Resolve t_update_eq : core.
+
 (** **** Exercise: 2 stars, standard, optional (t_update_neq)
 
     On the other hand, if we update a map [m] at a key [x1] and then
@@ -225,9 +227,10 @@ Proof. crush. Qed.
 Theorem t_update_neq : forall (A : Type) (m : total_map A) x1 x2 v,
   x1 <> x2 ->
   (x1 !-> v ; m) x2 = m x2.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. unfold t_update; crush' String.eqb_neq fail. Qed.
 (** [] *)
+
+Hint Resolve t_update_neq : core.
 
 (** **** Exercise: 2 stars, standard, optional (t_update_shadow)
 
@@ -237,10 +240,21 @@ Proof.
     to any key) as the simpler map obtained by performing just
     the second [update] on [m]: *)
 
+
 Lemma t_update_shadow : forall (A : Type) (m : total_map A) x v1 v2,
   (x !-> v2 ; x !-> v1 ; m) = (x !-> v2 ; m).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold t_update.
+  repeat (
+    try match goal with
+    | [ |- context [(?x =? ?y)%string] ] => destruct (x =? y)%string
+    | [ |- _ = _ ] => apply functional_extensionality
+    end;crush
+  ).
+Qed.
+
+Hint Resolve t_update_shadow : core.
+
 (** [] *)
 
 (** **** Exercise: 2 stars, standard (t_update_same)
@@ -257,8 +271,17 @@ Proof.
 Theorem t_update_same : forall (A : Type) (m : total_map A) x,
   (x !-> m x ; m) = m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold t_update.
+  repeat (
+    try match goal with
+    | [ |- context [(?x =? ?y)%string] ] => destruct (String.eqb_spec x y)
+    | [ |- _ = _ ] => apply functional_extensionality
+    end;crush
+  ).
+Qed.
 (** [] *)
+
+Hint Resolve t_update_same : core.
 
 (** **** Exercise: 3 stars, standard, especially useful (t_update_permute)
 
@@ -273,7 +296,14 @@ Theorem t_update_permute : forall (A : Type) (m : total_map A)
   =
   (x2 !-> v2 ; x1 !-> v1 ; m).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold t_update.
+  repeat (
+    try match goal with
+    | [ |- context [(?x =? ?y)%string] ] => destruct (String.eqb_spec x y)
+    | [ |- _ = _ ] => apply functional_extensionality
+    end;crush
+  ).
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -313,12 +343,16 @@ Proof.
   reflexivity.
 Qed.
 
+Hint Resolve apply_empty : core.
+
 Lemma update_eq : forall (A : Type) (m : partial_map A) x v,
   (x |-> v ; m) x = Some v.
 Proof.
   intros. unfold update. rewrite t_update_eq.
   reflexivity.
 Qed.
+
+Hint Resolve update_eq : core.
 
 (** The [update_eq] lemma is used very often in proofs.  Adding it to
     Coq's global "hint database" allows proof-automation tactics such
@@ -335,12 +369,16 @@ Proof.
   - apply H.
 Qed.
 
+Hint Resolve update_neq : core.
+
 Lemma update_shadow : forall (A : Type) (m : partial_map A) x v1 v2,
   (x |-> v2 ; x |-> v1 ; m) = (x |-> v2 ; m).
 Proof.
   intros A m x v1 v2. unfold update. rewrite t_update_shadow.
   reflexivity.
 Qed.
+
+Hint Resolve update_shadow : core.
 
 Theorem update_same : forall (A : Type) (m : partial_map A) x v,
   m x = Some v ->
@@ -349,6 +387,8 @@ Proof.
   intros A m x v H. unfold update. rewrite <- H.
   apply t_update_same.
 Qed.
+
+Hint Resolve update_same : core.
 
 Theorem update_permute : forall (A : Type) (m : partial_map A)
                                 x1 x2 v1 v2,
@@ -362,6 +402,8 @@ Qed.
 (** One last thing: For partial maps, it's convenient to introduce a
     notion of map inclusion, stating that all the entries in one map
     are also present in another: *)
+
+Hint Resolve update_permute : core.
 
 Definition includedin {A : Type} (m m' : partial_map A) :=
   forall x v, m x = Some v -> m' x = Some v.
@@ -385,6 +427,8 @@ Proof.
       * apply Hxy.
     + apply Hxy.
 Qed.
+
+Hint Resolve includedin_update : core.
 
 (** This property is quite useful for reasoning about languages with
     variable binding -- e.g., the Simply Typed Lambda Calculus, which
