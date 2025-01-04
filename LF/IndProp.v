@@ -1766,35 +1766,42 @@ Proof.
         let H' := fresh "H" in specialize (H 1) as H'
       end
     end;crush
-  ). un_done.
+  );un_done.
   - exists x, x0, (x1++s2). crush;try solve_apps.
-    specialize (H5 m).
-    Print app_assoc.
-    repeat rewrite <- app_assoc in *. simpl in *.
-    Search ( (_ ++ _) ++ _ ++ _ = (_ ++ _ ++ _ ) ++ _ ).
-    (* rewrite app_assoc.
-    rewrite list_app_progress.
-    sets_eq a: (x++napp m x0++x1). crush. *)
-    do 3 try match goal with
-      | [ H : ?a =~ _ |- context [?a ++ _] ] =>
-        let a' := fresh "a" in
-          sets_eq a': a
-      | [ |- context [?ab ++ ?cd] ] =>
-        match ab with
-        | ?a ++ ?b =>
-          match cd with
-          | ?c ++ ?d => rewrite list_app_progress
-          | _ => fail 3
-          end
-        | _ => first [ rewrite app_assoc | fail 2 ]
-        end
-    end.
-    repeat (
+    specialize (H5 m). repeat rewrite <- app_assoc in *. simpl in *.
+    repeat(
       try match goal with
-      | [ H : ?a ++ ?b =~ _ |- context [ ?a ++ ?b ++ ?c ] ] =>
-
-      | [ |- context [ ?a ++ ?b ++ ?c ] ] => rewrite app_assoc
-      end
+        | [ H : ?a =~ _ |- context [?a ++ _] ] =>
+          let a' := fresh "a" in
+            sets_eq a': a
+        | [ |- context [?ab ++ ?cd] ] =>
+          match ab with
+          | ?a ++ ?b =>
+            match cd with
+            | ?c ++ ?d => rewrite list_app_progress
+            | _ => fail 3
+            end
+          | _ => first [ rewrite app_assoc | fail 2 ]
+          end
+      end;crush
+    ).
+  - exists (s1++x), x0, x1. crush;try solve_apps.
+    specialize (H5 m). repeat rewrite <- app_assoc in *. simpl in *.
+    repeat(
+      try match goal with
+        | [ H : ?a =~ _ |- context [?a ++ _] ] =>
+          let a' := fresh "a" in
+            sets_eq a': a
+        | [ |- context [?ab ++ ?cd] ] =>
+          match ab with
+          | ?a ++ ?b =>
+            match cd with
+            | ?c ++ ?d => rewrite list_app_progress
+            | _ => fail 3
+            end
+          | _ => first [ rewrite app_assoc | fail 2 ]
+          end
+      end;crush
     ).
   (* intros T re s Hmatch.
   induction Hmatch
