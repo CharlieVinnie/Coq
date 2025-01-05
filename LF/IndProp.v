@@ -1768,7 +1768,8 @@ Proof.
     end;crush
   );un_done.
   - exists x, x0, (x1++s2). crush;try solve_apps.
-    specialize (H5 m). repeat rewrite <- app_assoc in *. simpl in *.
+    specialize (H5 m).
+    repeat rewrite <- app_assoc in *. simpl in *.
     repeat(
       try match goal with
         | [ H : ?a =~ _ |- context [?a ++ _] ] =>
