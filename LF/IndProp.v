@@ -1900,7 +1900,7 @@ Proof.
   - crush' pumping_constant_0_false le.
   - Hint Rewrite app_nil_r : core.
     Hint Rewrite <- plus_n_O : core.
-    
+Admitted.
   (* intros T re s Hmatch.
   induction Hmatch
     as [ | x | s1 re1 s2 re2 Hmatch1 IH1 Hmatch2 IH2
@@ -1959,6 +1959,8 @@ Inductive reflect (P : Prop) : bool -> Prop :=
   | ReflectT (H :   P) : reflect P true
   | ReflectF (H : ~ P) : reflect P false.
 
+Hint Constructors reflect : core.
+
 (** The [reflect] property takes two arguments: a proposition
     [P] and a boolean [b].  It states that the property [P]
     _reflects_ (intuitively, is equivalent to) the boolean [b]: that
@@ -1989,8 +1991,7 @@ Qed.
 
 (** **** Exercise: 2 stars, standard, especially useful (reflect_iff) *)
 Theorem reflect_iff : forall P b, reflect P b -> (P <-> b = true).
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. crush;inversion H;crush. Qed.
 (** [] *)
 
 (** We can think of [reflect] as a variant of the usual "if and only
@@ -2048,8 +2049,12 @@ Fixpoint count n l :=
 Theorem eqbP_practice : forall n l,
   count n l = 0 -> ~(In n l).
 Proof.
-  intros n l Hcount. induction l as [| m l' IHl'].
-  (* FILL IN HERE *) Admitted.
+  Induct 2;crush;
+  try match goal with | [ H: context [if ?x =? ?y then _ else _] |- _ ] => destruct (eqbP x y) end;
+  crush.
+Qed.
+  (* intros n l Hcount. induction l as [| m l' IHl'].
+  (* FILL IN HERE *) Admitted. *)
 (** [] *)
 
 (** This small example shows reflection giving us a small gain in
