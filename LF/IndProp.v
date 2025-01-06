@@ -1728,6 +1728,8 @@ Proof.
     + apply IHm.
 Qed.
 
+Hint Resolve napp_star : core.
+
 (** The (weak) pumping lemma itself says that, if [s =~ re] and if the
     length of [s] is at least the pumping constant of [re], then [s]
     can be split into three substrings [s1 ++ s2 ++ s3] in such a way
@@ -1785,12 +1787,34 @@ Ltac list_solver solver :=
   simpl in *; 
   try_generalize_sublists solver.
 
+Lemma le_add_le_l : forall a b c, a+b<=c -> a<=c. Proof. crush. Qed.
+
+Lemma le_add_le_r : forall a b c, a+b<=c -> b<=c. Proof. crush. Qed.
+
+Lemma napp_star_r : forall T m s1 s2 (re: reg_exp T),
+  s1 =~ re -> s2 =~ re -> s1 ++ napp m s2 =~ Star re.
+Proof. intros ?. induction m;crush. Qed.
+
+Hint Resolve napp_star_r : core.
+
+Local Ltac napp_m_solver :=
+  match goal with
+  | [ m: nat, H: forall (x:nat), _ |- _ ] =>
+    specialize (H m); list_solver crush
+  end.
 
 (** Complete the proof below. Several of the lemmas about [le] that
     were in an optional exercise earlier in this chapter may also be
     useful. *)
 Proof.
-  intros. induction H;crush;eauto;try rewrite app_length in *.
+  intros. induction H;crush;eauto;try rewrite app_length in *;
+  try match goal with
+    | [ x: ?T, y: ?T, s: ?T0, H : ?F ?x + ?F ?y <= ?G ?s |- _ ] =>
+      let Hx := fresh "Hx" in
+      let Hy := fresh "Hy" in
+        specialize (le_add_le_l (F x) (F y) (G s) H) as Hx;
+        specialize (le_add_le_r (F x) (F y) (G s) H) as Hy
+  end;
   repeat (
     try match goal with
     | [ H : ?x + ?y <= ?a + ?b |- _ ] => apply add_le_cases in H
@@ -1803,9 +1827,17 @@ Proof.
       end
     end;crush
   );un_done.
-  - exists x, x0, (x1++s2). crush;try solve_apps.
-    specialize (H5 m). list_solver crush.
-  - exists (s1++x), x0, x1. crush;try solve_apps.
+  - exists x, x0, (x1++s2). crush;try solve_apps;napp_m_solver.
+  - exists (s1++x), x0, x1. crush;try solve_apps;napp_m_solver.
+  - exists x, x0, x1. crush.
+  - exists x, x0, x1. crush.
+  - crush' pumping_constant_0_false le.
+  - Hint Rewrite app_nil_r : core.
+    Hint Rewrite <- plus_n_O : core.
+Admitted.
+    (* destruct s2;crush.
+    + exists x,x0,x1. crush.
+    + exists s1,(x::s2),(@nil T). crush. inversion H1. *)
   (* intros T re s Hmatch.
   induction Hmatch
     as [ | x | s1 re1 s2 re2 Hmatch1 IH1 Hmatch2 IH2
@@ -1822,6 +1854,9 @@ Proof.
     requiring that [s2 <> []], it also requires that [length s1 +
     length s2 <= pumping_constant re]. *)
 
+Lemma le_two_ways : forall a b, a<=b \/ b<=a.
+Proof. crush. Qed.
+
 Lemma pumping : forall T (re : reg_exp T) s,
   s =~ re ->
   pumping_constant re <= length s ->
@@ -1833,14 +1868,47 @@ Lemma pumping : forall T (re : reg_exp T) s,
 
 (** You may want to copy your proof of weak_pumping below. *)
 Proof.
-  intros T re s Hmatch.
+  Hint Rewrite app_length : core.
+  intros. induction H;crush;eauto;try rewrite app_length in *;
+  try match goal with
+    | [ x: ?T, y: ?T, s: ?T0, H : ?F ?x + ?F ?y <= ?G ?s |- _ ] =>
+      let Hx := fresh "Hx" in
+      let Hy := fresh "Hy" in
+        specialize (le_add_le_l (F x) (F y) (G s) H) as Hx;
+        specialize (le_add_le_r (F x) (F y) (G s) H) as Hy
+  end;
+  repeat (
+    try match goal with
+    | [ H : ?x + ?y <= ?a + ?b |- _ ] => apply add_le_cases in H
+    | [ H: forall m:nat, ?a ++ napp m ?b ++ ?c =~ ?d |- _ ] =>
+      match goal with
+      | [ H0 : done (H,1) |- _ ] => fail 1
+      | [ |- _ ] =>
+        assert (done (H,1)) by constructor;
+        let H' := fresh "H" in specialize (H 1) as H'
+      end
+    end;crush
+  );un_done.
+  - exists x, x0, (x1++s2). crush;try solve_apps;napp_m_solver.
+  - destruct (le_two_ways (pumping_constant re1) (length s1));crush.
+    + exists x2, x3, (x4++x++x0++x1). crush;try solve_apps;napp_m_solver.
+    + exists (s1++x), x0, x1. crush;try solve_apps;napp_m_solver.
+  - exists x, x0, x1. crush.
+  - exists x, x0, x1. crush.
+  - exists x, x0, x1. crush.
+  - exists x, x0, x1. crush.
+  - crush' pumping_constant_0_false le.
+  - Hint Rewrite app_nil_r : core.
+    Hint Rewrite <- plus_n_O : core.
+    
+  (* intros T re s Hmatch.
   induction Hmatch
     as [ | x | s1 re1 s2 re2 Hmatch1 IH1 Hmatch2 IH2
        | s1 re1 re2 Hmatch IH | re1 s2 re2 Hmatch IH
        | re | s1 s2 re Hmatch1 IH1 Hmatch2 IH2 ].
   - (* MEmpty *)
     simpl. intros contra. inversion contra.
-  (* FILL IN HERE *) Admitted.
+  FILL IN HERE Admitted. *)
 
 End Pumping.
 (** [] *)
