@@ -15,7 +15,7 @@ Ltac get_sub_helper l cont :=
     | [ |- context [a] ] =>
       get_sub_helper b ltac:(
         match goal with
-        | [ |- context [ a ++ b ++ ?c ] ] => rewrite (app_assoc a b c)
+        | [ |- context [ a ++ b ++ ?c ] ] => rewrite (@app_assoc _ a b c)
         end;cont
       )
     end

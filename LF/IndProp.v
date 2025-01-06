@@ -1747,8 +1747,44 @@ Lemma weak_pumping : forall T (re : reg_exp T) s,
     s2 <> [] /\
     forall m, s1 ++ napp m s2 ++ s3 =~ re.
 
-Lemma list_app_progress : forall (T:Type) (a b c d:list T), (a++b)++c++d = (a++b++c)++d.
-Proof. intros;repeat rewrite app_assoc;reflexivity. Qed.
+Ltac get_sub_helper l cont :=
+  match l with
+  | ?a ++ ?b =>
+    match goal with
+    | [ |- context [a] ] =>
+      get_sub_helper b ltac:(
+        match goal with
+        | [ |- context [ a ++ b ++ ?c ] ] => rewrite (@app_assoc _ a b c)
+        end;cont
+      )
+    end
+  | _ =>
+    match goal with
+    | [ |- context [l] ] => cont
+    end
+  end.
+
+Ltac get_sub l := get_sub_helper l idtac.
+
+Ltac subst_sub l :=
+  let l' := fresh "l" in
+  let H := fresh "Heq_l" in
+  sets_eq l' H: l; clear H.
+
+Ltac generalize_sub l := get_sub l; subst_sub l.
+
+Ltac try_generalize_sublists solver :=
+  match goal with
+  | [ H: context [ ?a ++ ?b ] |- _ ] =>
+    generalize_sub (a++b); try solve[solver]; try_generalize_sublists solver
+  end.
+
+Ltac list_solver solver :=
+  repeat rewrite <- app_assoc in *;
+  repeat rewrite app_nil_r in *;
+  simpl in *; 
+  try_generalize_sublists solver.
+
 
 (** Complete the proof below. Several of the lemmas about [le] that
     were in an optional exercise earlier in this chapter may also be
@@ -1760,50 +1796,16 @@ Proof.
     | [ H : ?x + ?y <= ?a + ?b |- _ ] => apply add_le_cases in H
     | [ H: forall m:nat, ?a ++ napp m ?b ++ ?c =~ ?d |- _ ] =>
       match goal with
-      | [ H0 : done H |- _ ] => fail 1
+      | [ H0 : done (H,1) |- _ ] => fail 1
       | [ |- _ ] =>
-        assert (done H) by constructor;
+        assert (done (H,1)) by constructor;
         let H' := fresh "H" in specialize (H 1) as H'
       end
     end;crush
   );un_done.
   - exists x, x0, (x1++s2). crush;try solve_apps.
-    specialize (H5 m).
-    repeat rewrite <- app_assoc in *. simpl in *.
-    repeat(
-      try match goal with
-        | [ H : ?a =~ _ |- context [?a ++ _] ] =>
-          let a' := fresh "a" in
-            sets_eq a': a
-        | [ |- context [?ab ++ ?cd] ] =>
-          match ab with
-          | ?a ++ ?b =>
-            match cd with
-            | ?c ++ ?d => rewrite list_app_progress
-            | _ => fail 3
-            end
-          | _ => first [ rewrite app_assoc | fail 2 ]
-          end
-      end;crush
-    ).
+    specialize (H5 m). list_solver crush.
   - exists (s1++x), x0, x1. crush;try solve_apps.
-    specialize (H5 m). repeat rewrite <- app_assoc in *. simpl in *.
-    repeat(
-      try match goal with
-        | [ H : ?a =~ _ |- context [?a ++ _] ] =>
-          let a' := fresh "a" in
-            sets_eq a': a
-        | [ |- context [?ab ++ ?cd] ] =>
-          match ab with
-          | ?a ++ ?b =>
-            match cd with
-            | ?c ++ ?d => rewrite list_app_progress
-            | _ => fail 3
-            end
-          | _ => first [ rewrite app_assoc | fail 2 ]
-          end
-      end;crush
-    ).
   (* intros T re s Hmatch.
   induction Hmatch
     as [ | x | s1 re1 s2 re2 Hmatch1 IH1 Hmatch2 IH2
