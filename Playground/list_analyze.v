@@ -50,6 +50,9 @@ Ltac try_generalize_sublists solver :=
     generalize_sub (a++b); try solve[solver]; try_generalize_sublists solver
   end.
 
+Ltac list_solver solver :=
+  simpl; repeat rewrite <- app_assoc in *; try_generalize_sublists solver.
+
 Goal forall T (x1 x2 x3 x4 x5 x6 x7 x8 l1 l2 l3 l4 l5: list T),
   l1 = x1 ++ x2 ->
   l2 = x3 ++ x4 ->
@@ -60,6 +63,15 @@ Goal forall T (x1 x2 x3 x4 x5 x6 x7 x8 l1 l2 l3 l4 l5: list T),
   F l4 -> F x4 -> F l5 -> F x8 ->
   F (x1++x2++x3++x4++x5++x6++x7++x8).
 Proof.
-  intros. simpl. repeat rewrite <- app_assoc.
-  try_generalize_sublists crush.
+  crush; list_solver crush.
+Qed.
+
+Goal forall T (x1 x2 x3 x4: list T),
+  F (x1++x2) ->
+  F (x1++x3++x4) ->
+  F (x4++x2) ->
+  F (x2++x1) ->
+  F (x1++x3++x4++x2++x1).
+Proof.
+  crush; list_solver crush.
 Qed.
