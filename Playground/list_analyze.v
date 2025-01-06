@@ -8,16 +8,6 @@ Inductive F {T:Type}: list T -> Prop :=
 
 Hint Constructors F : core.
 
-Local Lemma list_app_1 : forall (T:Type) (a b c d:list T),
-  a++b++c++d = a++(b++c)++d.
-Proof. intros;repeat rewrite app_assoc;reflexivity. Qed.
-
-Local Lemma list_app_2 : forall (T:Type) (a b c d e:list T),
-  a++(b++c)++d++e = a++(b++c++d)++e.
-Proof. intros;repeat rewrite app_assoc;reflexivity. Qed.
-
-Print app_assoc.
-
 Ltac get_sub_helper l cont :=
   match l with
   | ?a ++ ?b =>
