@@ -21,6 +21,9 @@
     equivalence_ and introduce _Hoare Logic_, a popular logic for
     reasoning about imperative programs. *)
 
+From CRUSH Require Import Crush.
+From TLC Require Import LibTactics.
+
 Set Warnings "-notation-overridden,-parsing,-deprecated-hint-without-locality".
 From Coq Require Import Bool.Bool.
 From Coq Require Import Init.Nat.
@@ -212,6 +215,8 @@ Proof.
     simpl. rewrite IHa1. rewrite IHa2. reflexivity.
   - (* AMult *)
     simpl. rewrite IHa1. rewrite IHa2. reflexivity.  Qed.
+
+Hint Resolve optimize_0plus_sound : core.
 
 (* ################################################################# *)
 (** * Coq Automation *)
@@ -463,13 +468,25 @@ Admitted.
     it is sound.  Use the tacticals we've just seen to make the proof
     as short and elegant as possible. *)
 
-Fixpoint optimize_0plus_b (b : bexp) : bexp
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Print bexp.
+
+Fixpoint optimize_0plus_b (b : bexp) : bexp :=
+  match b with
+  | BTrue => BTrue
+  | BFalse => BFalse
+  | BEq a1 a2 => BEq (optimize_0plus a1) (optimize_0plus a2)
+  | BNeq a1 a2 => BNeq (optimize_0plus a1) (optimize_0plus a2)
+  | BLe a1 a2 => BLe (optimize_0plus a1) (optimize_0plus a2)
+  | BGt a1 a2 => BGt (optimize_0plus a1) (optimize_0plus a2)
+  | BNot b0 => BNot (optimize_0plus_b b0)
+  | BAnd b1 b2 => BAnd (optimize_0plus_b b1) (optimize_0plus_b b2)
+  end.
 
 Theorem optimize_0plus_b_sound : forall b,
   beval (optimize_0plus_b b) = beval b.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  Induct 1;crush;f_equal;crush.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, standard, optional (optimize)
@@ -696,6 +713,8 @@ Inductive aevalR : aexp -> nat -> Prop :=
 
   where "e '==>' n" := (aevalR e n) : type_scope.
 
+Hint Constructors aevalR : core.
+
 (* ================================================================= *)
 (** ** Inference Rule Notation *)
 
@@ -825,6 +844,8 @@ Proof.
       * apply IHa2. reflexivity.
 Qed.
 
+Hint Resolve aeval_iff_aevalR : core.
+
 (** Again, we can make the proof quite a bit shorter using some
     tacticals. *)
 
@@ -846,16 +867,29 @@ Qed.
     Write a relation [bevalR] in the same style as
     [aevalR], and prove that it is equivalent to [beval]. *)
 
+Print bexp.
+
 Reserved Notation "e '==>b' b" (at level 90, left associativity).
+
 Inductive bevalR: bexp -> bool -> Prop :=
-(* FILL IN HERE *)
-where "e '==>b' b" := (bevalR e b) : type_scope
+  | E_BTrue : BTrue ==>b true
+  | E_BFalse : BFalse ==>b false
+  | E_BEq : forall a1 a2 x1 x2, a1 ==> x1 -> a2 ==> x2 -> BEq a1 a2 ==>b x1=?x2
+  | E_BNeq : forall a1 a2 x1 x2, a1 ==> x1 -> a2 ==> x2 -> BNeq a1 a2 ==>b negb (x1=?x2)
+  | E_BLe: forall a1 a2 x1 x2, a1 ==> x1 -> a2 ==> x2 -> BLe a1 a2 ==>b x1<=?x2
+  | E_BGt: forall a1 a2 x1 x2, a1 ==> x1 -> a2 ==> x2 -> BGt a1 a2 ==>b x2<=?x1
+  | E_BNot: forall b0 x0, b0 ==>b x0 -> BNot b0 ==>b negb x0
+  | E_BAnd: forall b1 b2 x1 x2, b1 ==>b x1 -> b2 ==>b x2 -> BAnd b1 b2 ==>b x1&&x2
+
+  where "e '==>b' b" := (bevalR e b) : type_scope
 .
+
+Hint Constructors bevalR : core.
 
 Lemma beval_iff_bevalR : forall b bv,
   b ==>b bv <-> beval b = bv.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  Induct 1;crush' false (aexp,bexp,aevalR,bevalR);try rewrite aeval_iff_aevalR in *;crush.
 (** [] *)
 
 End AExp.
