@@ -894,15 +894,17 @@ Hint Constructors bevalR : core.
 Lemma beval_iff_bevalR : forall b bv,
   b ==>b bv <-> beval b = bv.
 Proof.
+  Hint Extern 1 (beval _ = _) =>
+    match goal with
+    | [ H : forall _, _ ==>b _ <-> beval _ = _ |- _ ] => apply H
+    end : core.
+  Hint Extern 1 (_ ==>b _) =>
+    match goal with
+    | [ H : forall _, _ ==>b _ <-> beval _ = _ |- _ ] => apply H
+    end : core.
   Induct 1;crush' false (aexp,bexp,aevalR,bevalR);
   try rewrite aeval_iff_aevalR in *;crush;
-  try rewrite <- aeval_iff_aevalR in *;crush;
   try f_equal;crush.
-  - apply IHb;crush.
-  - apply E_BNot. apply IHb;crush.
-  - apply IHb1. crush.
-  - apply IHb2. crush.
-  - apply E_BAnd;try apply IHb1;try apply IHb2;crush.
 Qed.
 (** [] *)
 
