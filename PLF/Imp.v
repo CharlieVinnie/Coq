@@ -1737,6 +1737,8 @@ Proof.
     rewrite (IHE1_1 st'0 H3) in *.
     apply IHE1_2. assumption.  Qed.
 
+Hint Resolve ceval_deterministic : core.
+
 (* ################################################################# *)
 (** * Reasoning About Imp Programs *)
 
@@ -1767,6 +1769,16 @@ Proof.
 
 (* FILL IN HERE *)
 
+Theorem XtimesYinZ_spec : forall st x y st',
+  st X = x -> st Y = y ->
+  st =[ XtimesYinZ ]=> st' ->
+  st' Z = x*y.
+Proof.
+  introv ? ? H1.
+  assert (st =[ XtimesYinZ ]=> (Z!->x*y;st)) as H2 by (unfold XtimesYinZ;simulate_trivial).
+  specialize (ceval_deterministic _ _ _ _ H1 H2); crush.
+Qed.
+
 (* Do not modify the following line: *)
 Definition manual_grade_for_XtimesYinZ_spec : option (nat*string) := None.
 (** [] *)
@@ -1775,7 +1787,9 @@ Definition manual_grade_for_XtimesYinZ_spec : option (nat*string) := None.
 Theorem loop_never_stops : forall st st',
   ~(st =[ loop ]=> st').
 Proof.
-  intros st st' contra. unfold loop in contra.
+  introv H. gen_eq c:loop. induction H;crush' false @Logic.eq.
+Qed.
+  (* intros st st' contra. unfold loop in contra.
   remember <{ while true do skip end }> as loopdef
            eqn:Heqloopdef.
 
@@ -1784,7 +1798,7 @@ Proof.
       contradictory and so can be solved in one step with
       [discriminate]. *)
 
-  (* FILL IN HERE *) Admitted.
+  (* FILL IN HERE *) Admitted. *)
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (no_whiles_eqv)
@@ -1805,19 +1819,31 @@ Fixpoint no_whiles (c : com) : bool :=
       false
   end.
 
+Hint Unfold no_whiles : core.
+
 (** This predicate yields [true] just on programs that have no while
     loops.  Using [Inductive], write a property [no_whilesR] such that
     [no_whilesR c] is provable exactly when [c] is a program with no
     while loops.  Then prove its equivalence with [no_whiles]. *)
 
 Inductive no_whilesR: com -> Prop :=
- (* FILL IN HERE *)
+  | NSkip : no_whilesR <{skip}>
+  | NAsgn : forall X a, no_whilesR <{X:=a}>
+  | NSeq : forall c1 c2, no_whilesR c1 -> no_whilesR c2 -> no_whilesR <{c1;c2}>
+  | NIf : forall a c1 c2, no_whilesR c1 -> no_whilesR c2 -> no_whilesR <{if a then c1 else c2 end}>
 .
+
+Hint Constructors no_whilesR : core.
 
 Theorem no_whiles_eqv:
   forall c, no_whiles c = true <-> no_whilesR c.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  crush.
+  - induction c; repeat (
+      try match goal with | [ H: _&&_=true |- _ ] => rewrite andb_true_iff in H end;crush
+    ).
+  - induction H;crush.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, standard (no_whiles_terminating)
