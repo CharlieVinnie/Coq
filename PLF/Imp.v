@@ -1609,6 +1609,41 @@ Proof.
     + apply E_Asgn. reflexivity.
 Qed.
 
+Print com.
+
+Ltac simulate c st :=
+  match c with
+  | <{skip}> => st
+  | <{?X := ?a}> => constr:(X!->aeval st a;st)
+  | <{?c1;?c2}> => simulate c2 ltac:(simulate c1 st)
+  | <{ if ?x then ?c1 else ?c2 end }> =>
+    constr:(if (beval st x) then ltac:(simulate c1 st) else ltac:(simulate c2 st))
+  | <{ while ?x do ?c0 end }> =>
+    constr:(if (beval st x) then ltac:(simulate c ltac:(simulate c0 st)) else st)
+  end.
+
+Ltac simulate_trivial :=
+  repeat match goal with
+  | [ |- ?st =[ ?c ]=> ?st' ] =>
+    match c with
+    | <{skip}> => apply E_Skip
+    | <{?X := ?a}> => apply E_Asgn
+    | <{?c1;?c2}> => let st'':=simulate c1 st in apply E_Seq with st''
+    | <{ if ?x then ?c1 else ?c2 end }> =>
+      let x' := eval compute in (beval st x) in
+      match x' with
+      | true => apply E_IfTrue
+      | false => apply E_IfFalse
+      end
+    | <{ while ?x do ?c0 end }> =>
+      let x' := eval compute in (beval st x) in
+      match x' with
+      | true => let st'':=simulate c0 st in apply E_WhileTrue with st''
+      | false => apply E_WhileFalse
+      end
+    end
+  end;crush.
+
 (** **** Exercise: 2 stars, standard (ceval_example2) *)
 Example ceval_example2:
   empty_st =[
@@ -1617,8 +1652,15 @@ Example ceval_example2:
     Z := 2
   ]=> (Z !-> 2 ; Y !-> 1 ; X !-> 0).
 Proof.
-  apply E_Seq with ( X !-> 0 );crush.
-  apply E_Seq with ( Y !-> 1 ; X !-> 0 );crush.
+  simulate_trivial.
+  (* match goal with
+  | [ |- ?st =[ ?c ]=> ?st' ] =>
+    match c with
+    | <{skip}> => apply E_Skip
+    | <{?X := ?a}> => apply E_Asgn with (X!->a;st)
+    | <{?c1;?c2}> => apply 
+    end
+  end. *)
 Qed.
 
 Set Printing Implicit.
@@ -1640,12 +1682,14 @@ Theorem pup_to_2_ceval :
     pup_to_n
   ]=> (X !-> 0 ; Y !-> 3 ; X !-> 1 ; Y !-> 2 ; Y !-> 0 ; X !-> 2).
 Proof.
-  apply E_Seq with (Y!->0;X!->2);crush.
+  unfold pup_to_n;simulate_trivial.
+  (* apply E_Seq with (Y!->0;X!->2);crush.
   apply E_WhileTrue with (X!->1;Y!->2;Y!->0;X!->2);crush.
   - apply E_Seq with (Y!->2;Y!->0;X!->2);crush.
   - apply E_WhileTrue with (X!->1;Y!->3;X!->1;Y!->2;Y!->0;X!->2);crush.
     + apply E_Seq with (Y!->3;X!->1;Y!->2;Y!->0;X!->2);crush.
-      apply E_Asgn;crush.
+      apply E_Asgn;crush. *)
+Qed.
 (** [] *)
 
 (* ================================================================= *)
