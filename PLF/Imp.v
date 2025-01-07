@@ -1181,6 +1181,8 @@ Fixpoint aeval (st : state) (* <--- NEW *)
   | <{a1 * a2}> => (aeval st a1) * (aeval st a2)
   end.
 
+Hint Unfold aeval : core.
+
 Fixpoint beval (st : state) (* <--- NEW *)
                (b : bexp) : bool :=
   match b with
@@ -1193,6 +1195,8 @@ Fixpoint beval (st : state) (* <--- NEW *)
   | <{~ b1}>      => negb (beval st b1)
   | <{b1 && b2}>  => andb (beval st b1) (beval st b2)
   end.
+
+Hint Unfold beval : core.
 
 (** We can use our notation for total maps in the specific case of
     states -- i.e., we write the empty state as [(_ !-> 0)]. *)
@@ -1246,6 +1250,8 @@ Inductive com : Type :=
   | CSeq (c1 c2 : com)
   | CIf (b : bexp) (c1 c2 : com)
   | CWhile (b : bexp) (c : com).
+
+Hint Constructors com : core.
 
 (** As we did for expressions, we can use a few [Notation]
     declarations to make reading and writing Imp programs more
@@ -1577,6 +1583,8 @@ Inductive ceval : com -> state -> state -> Prop :=
 
   where "st =[ c ]=> st'" := (ceval c st st').
 
+Hint Constructors ceval : core.
+
 (** The cost of defining evaluation as a relation instead of a
     function is that we now need to construct a _proof_ that some
     program evaluates to some result state, rather than just letting
@@ -1609,8 +1617,9 @@ Example ceval_example2:
     Z := 2
   ]=> (Z !-> 2 ; Y !-> 1 ; X !-> 0).
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  apply E_Seq with ( X !-> 0 );crush.
+  apply E_Seq with ( Y !-> 1 ; X !-> 0 );crush.
+Qed.
 
 Set Printing Implicit.
 Check @ceval_example2.
@@ -1623,15 +1632,20 @@ Check @ceval_example2.
     which you can reverse-engineer to discover the program you should
     write.  The proof of that theorem will be somewhat lengthy. *)
 
-Definition pup_to_n : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition pup_to_n : com :=
+  <{ Y:=0; while X <> 0 do Y:=Y+X; X:=X-1 end }>.
 
 Theorem pup_to_2_ceval :
   (X !-> 2) =[
     pup_to_n
   ]=> (X !-> 0 ; Y !-> 3 ; X !-> 1 ; Y !-> 2 ; Y !-> 0 ; X !-> 2).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply E_Seq with (Y!->0;X!->2);crush.
+  apply E_WhileTrue with (X!->1;Y!->2;Y!->0;X!->2);crush.
+  - apply E_Seq with (Y!->2;Y!->0;X!->2);crush.
+  - apply E_WhileTrue with (X!->1;Y!->3;X!->1;Y!->2;Y!->0;X!->2);crush.
+    + apply E_Seq with (Y!->3;X!->1;Y!->2;Y!->0;X!->2);crush.
+      apply E_Asgn;crush.
 (** [] *)
 
 (* ================================================================= *)
