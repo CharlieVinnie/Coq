@@ -1879,9 +1879,14 @@ Qed.
 (* FILL IN HERE *)
 
 Theorem no_whiles_terminating :
-  forall c st, no_whilesR c -> exists st', st =[ c ]=> st'.
+  forall c, no_whilesR c -> forall st, exists st', st =[ c ]=> st'.
 Proof.
   induction 1;crush;eauto.
+  - exists (X0!->aeval st a;st);crush.
+  - destruct (IHno_whilesR1 st). destruct (IHno_whilesR2 x). eauto.
+  - destruct (IHno_whilesR1 st). destruct (IHno_whilesR2 st).
+    destruct (beval st a) eqn: E;crush;eauto.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_no_whiles_terminating : option (nat*string) := None.
@@ -1952,8 +1957,32 @@ Inductive sinstr : Type :=
 
 Fixpoint s_execute (st : state) (stack : list nat)
                    (prog : list sinstr)
-                 : list nat
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+                 : list nat :=
+  match prog with
+  | nil => stack
+  | c::rest =>
+    let stack' :=
+      match c with
+      | SPush n => n::stack
+      | SLoad x => (st x)::stack
+      | SPlus =>
+        match stack with
+        | x::y::stk => (y+x)::stk
+        | _ => stack
+        end
+      | SMinus =>
+        match stack with
+        | x::y::stk => (y-x)::stk
+        | _ => stack
+        end
+      | SMult =>
+        match stack with
+        | x::y::stk => (y*x)::stk
+        | _ => stack
+        end
+      end
+    in s_execute st stack' rest
+  end.
 
 Check s_execute.
 
@@ -1961,20 +1990,28 @@ Example s_execute1 :
      s_execute empty_st []
        [SPush 5; SPush 3; SPush 1; SMinus]
    = [2; 5].
-(* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 Example s_execute2 :
      s_execute (X !-> 3) [3;4]
        [SPush 4; SLoad X; SMult; SPlus]
    = [15; 4].
-(* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 (** Next, write a function that compiles an [aexp] into a stack
     machine program. The effect of running the program should be the
     same as pushing the value of the expression on the stack. *)
 
-Fixpoint s_compile (e : aexp) : list sinstr
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Print aexp.
+
+Fixpoint s_compile (e : aexp) : list sinstr :=
+  match e with
+  | ANum n => SPush n :: nil
+  | AId x => SLoad x :: nil
+  | APlus e1 e2 => s_compile e1 ++ s_compile e2 ++ SPlus :: nil
+  | AMinus e1 e2 => s_compile e1 ++ s_compile e2 ++ SMinus :: nil
+  | AMult e1 e2 => s_compile e1 ++ s_compile e2 ++ SMult :: nil
+  end.
 
 (** After you've defined [s_compile], prove the following to test
     that it works. *)
@@ -1982,7 +2019,7 @@ Fixpoint s_compile (e : aexp) : list sinstr
 Example s_compile1 :
   s_compile <{ X - (2 * Y) }>
   = [SLoad X; SPush 2; SLoad Y; SMult; SMinus].
-(* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (execute_app) *)
@@ -1994,8 +2031,7 @@ Example s_compile1 :
 
 Theorem execute_app : forall st p1 p2 stack,
   s_execute st stack (p1 ++ p2) = s_execute st (s_execute st stack p1) p2.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. Induct 2;crush. Qed.
 
 (** [] *)
 
@@ -2008,8 +2044,7 @@ Proof.
 
 Lemma s_compile_correct_aux : forall st e stack,
   s_execute st stack (s_compile e) = aeval st e :: stack.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. crush.
 
 (** The main theorem should be a very easy corollary of that lemma. *)
 
