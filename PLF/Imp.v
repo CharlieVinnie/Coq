@@ -1622,7 +1622,7 @@ Ltac simulate c st :=
     constr:(if (beval st x) then ltac:(simulate c ltac:(simulate c0 st)) else st)
   end.
 
-Ltac simulate_trivial :=
+Ltac simulate_trivial_complex :=
   repeat match goal with
   | [ |- ?st =[ ?c ]=> ?st' ] =>
     match c with
@@ -1644,14 +1644,37 @@ Ltac simulate_trivial :=
     end
   end;crush.
 
+Ltac simulate_trivial :=
+  repeat match goal with
+  | [ |- ?st =[ ?c ]=> ?st' ] =>
+    match c with
+    | <{skip}> => apply E_Skip
+    | <{?X := ?a}> => eapply E_Asgn;try reflexivity
+    | <{?c1;?c2}> => eapply E_Seq
+    | <{ if ?x then ?c1 else ?c2 end }> =>
+      let x' := eval compute in (beval st x) in
+      match x' with
+      | true => apply E_IfTrue
+      | false => apply E_IfFalse
+      end
+    | <{ while ?x do ?c0 end }> =>
+      let x' := eval compute in (beval st x) in
+      match x' with
+      | true => eapply E_WhileTrue
+      | false => apply E_WhileFalse
+      end
+    end
+  end;crush.
+
 (** **** Exercise: 2 stars, standard (ceval_example2) *)
 Example ceval_example2:
   empty_st =[
+    skip;
     X := 0;
     Y := 1;
     Z := 2
   ]=> (Z !-> 2 ; Y !-> 1 ; X !-> 0).
-Proof.
+Proof. 
   simulate_trivial.
   (* match goal with
   | [ |- ?st =[ ?c ]=> ?st' ] =>
@@ -1854,6 +1877,11 @@ Qed.
     Use either [no_whiles] or [no_whilesR], as you prefer. *)
 
 (* FILL IN HERE *)
+
+Theorem no_whiles_terminating :
+  forall c st, no_whilesR c -> exists st', st =[ c ]=> st'.
+Proof.
+  induction 1;crush;eauto.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_no_whiles_terminating : option (nat*string) := None.
