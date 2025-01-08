@@ -2245,7 +2245,7 @@ Inductive ceval : com -> state -> result -> state -> Prop :=
       beval st b = true ->
       st =[ c ]=> st' / SContinue ->
       st' =[ while b do c end ]=> st'' / SContinue ->
-      st =[ while b do c end ]=> st' / SContinue
+      st =[ while b do c end ]=> st'' / SContinue
   | E_WhileFalse : forall st b c,
       beval st b = false ->
       st =[ while b do c end ]=> st / SContinue
@@ -2276,31 +2276,37 @@ Theorem seq_continue : forall c1 c2 st st' st'',
   st =[ c1 ]=> st' / SContinue ->
   st' =[ c2 ]=> st'' / SContinue ->
   st =[ c1 ; c2 ]=> st'' / SContinue.
-Proof. introv H1 H2. induction H1;crush' false ceval;eauto.
+Proof. eauto. Qed.
 
 Theorem seq_stops_on_break : forall c1 c2 st st',
   st =[ c1 ]=> st' / SBreak ->
   st =[ c1 ; c2 ]=> st' / SBreak.
-Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+Proof. eauto. Qed.
 
 (** **** Exercise: 3 stars, advanced, optional (while_break_true) *)
 Theorem while_break_true : forall b c st st',
   st =[ while b do c end ]=> st' / SContinue ->
   beval st' b = true ->
   exists st'', st'' =[ c ]=> st' / SBreak.
-Proof.
-(* FILL IN HERE *) Admitted.
-(** [] *)
+Proof. introv H H0. remember <{while b do c end}> as cmd. induction H;crush;eauto. Qed.
+
+Hint Resolve break_ignore : core.
+Hint Resolve while_continue : core.
+Hint Resolve while_stops_on_break : core.
+Hint Resolve seq_continue : core.
+Hint Resolve seq_stops_on_break : core.
+Hint Resolve while_break_true : core.
 
 (** **** Exercise: 4 stars, advanced, optional (ceval_deterministic) *)
 Theorem ceval_deterministic: forall (c:com) st st1 st2 s1 s2,
      st =[ c ]=> st1 / s1 ->
      st =[ c ]=> st2 / s2 ->
      st1 = st2 /\ s1 = s2.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. Induct 1;introv H1 H2;crush' false ceval.
+  - inversion H1;inversion H2;crush.
+    + assert (forall (st st1 st2 : state) (s1 s2 : result),
+  st =[ c2 ]=> st1 / s1 -> st =[ c2 ]=> st2 / s2 -> st1 = st2 ).
+      * 
 
 (** [] *)
 End BreakImp.
