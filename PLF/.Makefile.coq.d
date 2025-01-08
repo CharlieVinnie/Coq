@@ -1,7 +1,7 @@
 Maps.vo Maps.glob Maps.v.beautified Maps.required_vo: Maps.v /home/charlie/Coq/CoqLibs/Crush/Crush.vo /home/charlie/Coq/CoqLibs/tlc/src/LibTactics.vo
 Maps.vos Maps.vok Maps.required_vos: Maps.v /home/charlie/Coq/CoqLibs/Crush/Crush.vos /home/charlie/Coq/CoqLibs/tlc/src/LibTactics.vos
-Imp.vo Imp.glob Imp.v.beautified Imp.required_vo: Imp.v Maps.vo
-Imp.vos Imp.vok Imp.required_vos: Imp.v Maps.vos
+Imp.vo Imp.glob Imp.v.beautified Imp.required_vo: Imp.v /home/charlie/Coq/CoqLibs/Crush/Crush.vo /home/charlie/Coq/CoqLibs/tlc/src/LibTactics.vo Maps.vo
+Imp.vos Imp.vok Imp.required_vos: Imp.v /home/charlie/Coq/CoqLibs/Crush/Crush.vos /home/charlie/Coq/CoqLibs/tlc/src/LibTactics.vos Maps.vos
 Preface.vo Preface.glob Preface.v.beautified Preface.required_vo: Preface.v 
 Preface.vos Preface.vok Preface.required_vos: Preface.v 
 Equiv.vo Equiv.glob Equiv.v.beautified Equiv.required_vo: Equiv.v Maps.vo Imp.vo
