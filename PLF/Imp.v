@@ -2033,6 +2033,8 @@ Theorem execute_app : forall st p1 p2 stack,
   s_execute st stack (p1 ++ p2) = s_execute st (s_execute st stack p1) p2.
 Proof. Induct 2;crush. Qed.
 
+Hint Rewrite execute_app : core.
+
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (stack_compiler_correct) *)
@@ -2044,14 +2046,15 @@ Proof. Induct 2;crush. Qed.
 
 Lemma s_compile_correct_aux : forall st e stack,
   s_execute st stack (s_compile e) = aeval st e :: stack.
-Proof. crush.
+Proof. Induct 2;crush. Qed.
+
+Hint Resolve s_compile_correct_aux : core.
 
 (** The main theorem should be a very easy corollary of that lemma. *)
 
 Theorem s_compile_correct : forall (st : state) (e : aexp),
   s_execute st [] (s_compile e) = [ aeval st e ].
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. crush. Qed.
 
 (** [] *)
 
@@ -2075,6 +2078,23 @@ Proof.
 (* FILL IN HERE
 
     [] *)
+
+Print beval.
+
+Fixpoint beval_short_circuit (st:state) (b:bexp) :=
+  match b with
+| <{ true }> => true
+| <{ false }> => false
+| <{ a1 = a2 }> => aeval st a1 =? aeval st a2
+| <{ a1 <> a2 }> => negb (aeval st a1 =? aeval st a2)
+| <{ a1 <= a2 }> => aeval st a1 <=? aeval st a2
+| <{ a1 > a2 }> => negb (aeval st a1 <=? aeval st a2)
+| <{ ~ b1 }> => negb (beval st b1)
+| <{ b1 && b2 }> => if beval_short_circuit st b1 then beval_short_circuit st b2 else false
+  end.
+
+Theorem beval_short_circuit_correct : forall b st, beval st b = beval_short_circuit st b.
+Proof. Induct 1;crush. Qed.
 
 Module BreakImp.
 (** **** Exercise: 4 stars, advanced (break_imp)
@@ -2193,40 +2213,70 @@ Reserved Notation "st '=[' c ']=>' st' '/' s"
 (** Based on the above description, complete the definition of the
     [ceval] relation. *)
 
+Print com.
+
 Inductive ceval : com -> state -> result -> state -> Prop :=
   | E_Skip : forall st,
-      st =[ CSkip ]=> st / SContinue
-  (* FILL IN HERE *)
+      st =[ skip ]=> st / SContinue
+  | E_Break : forall st,
+      st =[ break ]=> st / SBreak
+  | E_Asgn : forall st x a,
+      st =[ x:=a ]=> (x!->aeval st a;st) / SContinue
+  | E_Seq_Break : forall st st' c1 c2,
+      st =[ c1 ]=> st' / SBreak ->
+      st =[ c1;c2 ]=> st' / SBreak
+  | E_Seq_Continue : forall st st' st'' sig c1 c2,
+      st =[ c1 ]=> st' / SContinue ->
+      st' =[ c2 ]=> st'' / sig ->
+      st =[ c1;c2 ]=> st'' / sig
+  | E_IfTrue : forall st st' sig b c1 c2,
+      beval st b = true ->
+      st =[ c1 ]=> st' / sig ->
+      st =[ if b then c1 else c2 end ]=> st' / sig
+  | E_IfFalse : forall st st' sig b c1 c2,
+      beval st b = false ->
+      st =[ c2 ]=> st' / sig ->
+      st =[ if b then c1 else c2 end ]=> st' / sig
+  | E_WhileTrue_Break : forall st st' b c,
+      beval st b = true ->
+      st =[ c ]=> st' / SBreak ->
+      st =[ while b do c end ]=> st' / SContinue
+  | E_WhileTrue_Continue : forall st st' st'' b c,
+      beval st b = true ->
+      st =[ c ]=> st' / SContinue ->
+      st' =[ while b do c end ]=> st'' / SContinue ->
+      st =[ while b do c end ]=> st' / SContinue
+  | E_WhileFalse : forall st b c,
+      beval st b = false ->
+      st =[ while b do c end ]=> st / SContinue
 
   where "st '=[' c ']=>' st' '/' s" := (ceval c st s st').
+
+Hint Constructors ceval : core.
 
 (** Now prove the following properties of your definition of [ceval]: *)
 
 Theorem break_ignore : forall c st st' s,
      st =[ break; c ]=> st' / s ->
      st = st'.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. inversion 1;crush' false ceval. Qed.
 
 Theorem while_continue : forall b c st st' s,
   st =[ while b do c end ]=> st' / s ->
   s = SContinue.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. inversion 1;crush' false ceval. Qed.
 
 Theorem while_stops_on_break : forall b c st st',
   beval st b = true ->
   st =[ c ]=> st' / SBreak ->
   st =[ while b do c end ]=> st' / SContinue.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. inversion 2;crush' false ceval. Qed.
 
 Theorem seq_continue : forall c1 c2 st st' st'',
   st =[ c1 ]=> st' / SContinue ->
   st' =[ c2 ]=> st'' / SContinue ->
   st =[ c1 ; c2 ]=> st'' / SContinue.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. introv H1 H2. induction H1;crush' false ceval;eauto.
 
 Theorem seq_stops_on_break : forall c1 c2 st st',
   st =[ c1 ]=> st' / SBreak ->
