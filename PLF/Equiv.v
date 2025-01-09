@@ -1,5 +1,8 @@
 (** * Equiv: Program Equivalence *)
 
+From CRUSH Require Import Crush.
+From TLC Require Import LibTactics.
+
 Set Warnings "-notation-overridden,-parsing,-deprecated-hint-without-locality".
 From PLF Require Import Maps.
 From Coq Require Import Bool.Bool.
@@ -103,9 +106,13 @@ Definition aequiv (a1 a2 : aexp) : Prop :=
   forall (st : state),
     aeval st a1 = aeval st a2.
 
+Hint Unfold aequiv : core.
+
 Definition bequiv (b1 b2 : bexp) : Prop :=
   forall (st : state),
     beval st b1 = beval st b2.
+
+Hint Unfold bequiv : core.
 
 (** Here are some simple examples of equivalences of arithmetic
     and boolean expressions. *)
@@ -143,6 +150,8 @@ Definition cequiv (c1 c2 : com) : Prop :=
   forall (st st' : state),
     (st =[ c1 ]=> st') <-> (st =[ c2 ]=> st').
 
+Hint Unfold cequiv : core.
+
 (** We can also define an asymmetric variant of this relation: We say
     that [c1] _refines_ [c2] if they produce the same final states
     _when [c1] terminates_ (but [c1] may not terminate in some cases
@@ -151,6 +160,8 @@ Definition cequiv (c1 c2 : com) : Prop :=
 Definition refines (c1 c2 : com) : Prop :=
   forall (st st' : state),
     (st =[ c1 ]=> st') -> (st =[ c2 ]=> st').
+
+Hint Unfold refines : core.
 
 (* ================================================================= *)
 (** ** Simple Examples *)
@@ -185,8 +196,7 @@ Theorem skip_right : forall c,
   cequiv
     <{ c ; skip }>
     c.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. unfold cequiv;crush' false ceval;eauto. Qed.
 (** [] *)
 
 (** Similarly, here is a simple equivalence that optimizes [if]
