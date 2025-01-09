@@ -2347,12 +2347,52 @@ Ltac inster' e trace obj :=
       end
   end.
 
+Local Ltac helper_det :=
+  match goal with
+  | [ c : com,
+      IH : (forall (st st1 st2 : state) (s1 s2 : result),
+        st =[ ?c ]=> st1 / s1 -> st =[ ?c ]=> st2 / s2 -> st1 = st2 /\ s1 = s2),
+      st : state, st1 : state, st2 : state,
+      H1 : ?st =[?c]=> ?st1 / _,
+      H2 : ?st =[?c]=> ?st2 / _ |- _
+      ] => specialize (IH _ _ _ _ _  H1 H2)
+  end.
+
+(* Lemma ceval_while_determ : forall c,
+  (forall st st1 st2 s1 s2,
+    st =[ c ]=> st1 / s1 -> st =[ c ]=> st2 / s2 -> st1 = st2 /\ s1 = s2) ->
+  forall b st st1 st2 s1 s2,
+  st =[ while b do c end ]=> st1 / s1 ->
+  st =[ while b do c end ]=> st2 / s2 ->
+  st1=st2 /\ s1=s2.
+Proof.
+  introv IH H1. gen_eq cmd: <{while b do c end}>. intros ?.
+  generalize dependent s2. generalize dependent st2.
+  induction H1;crush.
+  - inversion H0;try helper_det;crush.
+  - inversion H0;try helper_det;crush.
+  - inversion H1;try helper_det;crush.
+  - helper_det;crush.
+  - helper_det;crush.
+  - helper_det;crush. *)
+
 (** **** Exercise: 4 stars, advanced, optional (ceval_deterministic) *)
 Theorem ceval_deterministic: forall (c:com) st st1 st2 s1 s2,
      st =[ c ]=> st1 / s1 ->
      st =[ c ]=> st2 / s2 ->
      st1 = st2 /\ s1 = s2.
-Proof. Induct 1;introv H1 H2;crush' false ceval;
+Proof.
+  introv H1. generalize dependent st2. generalize dependent s2.
+  induction H1;introv H2;crush' false ceval;inversion H2;
+  repeat match goal with
+  | [ IHceval : forall _ _, _ , H : _ |- _ ] => specialize (IHceval _ _ H);crush
+  end;inversion H2;crush.
+Qed.
+  (* - specialize (IHceval _ _ H6);crush.
+  - specialize (IHceval _ _ H3);crush.
+  - specialize (IHceval _ _ H6);crush.
+  - specialize (IHceval _ _ H6);crush. *)
+  (* Induct 1;introv H1 H2;crush' false ceval;
     inversion H1;inversion H2;crush;
     repeat inster' IHc1 IHc1 (SContinue,SBreak);un_done;
     repeat inster' IHc2 IHc2 (SContinue,SBreak);un_done;crush.
@@ -2360,7 +2400,7 @@ Proof. Induct 1;introv H1 H2;crush' false ceval;
   - repeat inster' IHc2 IHc2 (SContinue,SBreak);un_done;intuition.
   - repeat inster' IHc IHc (SContinue,SBreak);un_done;intuition.
   - inversion H2;crush;
-    repeat inster' IHc IHc (SContinue,SBreak);un_done;intuition.
+    repeat inster' IHc IHc (SContinue,SBreak);un_done;intuition. *)
 
 (** [] *)
 End BreakImp.
