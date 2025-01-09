@@ -815,7 +815,7 @@ Proof.
 
   (* The new proof, with integrated automation: *)
   + forwards*: IHE1_1.
-    (* produces [H: st' = st'0]. *) skip.
+    (* produces [H: st' = st'0]. *) (*skip.*)
 
 Abort.
 
@@ -830,8 +830,8 @@ Theorem ceval_deterministic'''': forall c st st1 st2,
 Proof.
   introv E1 E2. gen st2.
   induction E1; intros; inverts* E2; tryfalse.
-  - forwards*: IHE1_1. subst*.
-  - forwards*: IHE1_1. subst*.
+  (* - forwards*: IHE1_1. subst*.
+  - forwards*: IHE1_1. subst*. *)
 Qed.
 
 End DeterministicImp.
