@@ -287,10 +287,7 @@ Theorem if_false : forall b c1 c2,
   cequiv
     <{ if b then c1 else c2 end }>
     c2.
-Proof.
-  (* crush' false ceval. *)
-  crush. unfolds in H. simpl in H. unfolds. crush' false ceval 2.
-(** [] *)
+Proof. unfolder (bequiv,cequiv). crush inv:ceval width:2. Qed.
 
 (** **** Exercise: 3 stars, standard (swap_if_branches)
 
@@ -302,8 +299,13 @@ Theorem swap_if_branches : forall b c1 c2,
     <{ if b then c1 else c2 end }>
     <{ if ~ b then c2 else c1 end }>.
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  Hint Rewrite negb_true_iff : core.
+  Hint Rewrite negb_false_iff : core.
+  unfolder (bequiv,cequiv).
+  crush lemma:(E_IfFalse,E_IfTrue) inv:ceval width:2;
+  try (apply E_IfFalse;solve[crush]);
+  try (apply E_IfTrue;solve[crush]).
+Qed.
 
 (** For [while] loops, we can give a similar pair of theorems.  A loop
     whose guard is equivalent to [false] is equivalent to [skip],

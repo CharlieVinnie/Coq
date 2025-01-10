@@ -249,10 +249,11 @@ Tactic Notation "crush" "inv:" constr(b) "width:" constr(n) :=
 Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "width:" constr(n) :=
   let n' := eval compute in n in crush' a b n'.
 
-
 From TLC Require Import LibTactics.
 
-Ltac unfolder ls := all ltac:(fun x => unfolds x) ls.
+Ltac unfolder ls := all ltac:(fun x => try unfolds x) ls.
+
+Ltac applyer ls := all ltac:(fun x => try apply x) ls.
 
 (** [crush] instantiates [crush'] with the simplest possible parameters. *)
 (* Ltac crush := crush' false false. *)
