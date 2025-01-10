@@ -44,9 +44,16 @@ Ltac all f ls :=
     | _ => f ls
   end.
 
+(** Succeed iff a >= b *)
+Ltac geq_tac a b :=
+  match b with
+  | O => idtac
+  | S ?b' => match a with | S ?a' => geq_tac a' b' end
+  end.
+
 (** Workhorse tactic to simplify hypotheses for a variety of proofs.
    * Argument [invOne] is a tuple-list of predicates for which we always do inversion automatically. *)
-Ltac simplHyp invOne :=
+Ltac simplHyp' invOne branches :=
   (** Helper function to do inversion on certain hypotheses, where [H] is the hypothesis and [F] its head symbol *)
   let invert H F :=
     (** We only proceed for those predicates in [invOne]. *)
@@ -54,7 +61,12 @@ Ltac simplHyp invOne :=
     (** This case covers an inversion that succeeds immediately, meaning no constructors of [F] applied. *)
       (inversion H; fail)
     (** Otherwise, we only proceed if inversion eliminates all but one constructor case. *)
-      || (inversion H; [idtac]; clear H; try subst) in
+      || (inversion H; [idtac]; clear H; try subst)
+      || (geq_tac branches 2; inversion H; [idtac|idtac]; clear H; try subst)
+      || (geq_tac branches 3; inversion H; [idtac|idtac|idtac]; clear H; try subst)
+      || (geq_tac branches 4; inversion H; [idtac|idtac|idtac|idtac]; clear H; try subst)
+      || (geq_tac branches 5; inversion H; [idtac|idtac|idtac|idtac|idtac]; clear H; try subst)
+      in
 
   match goal with
     (** Eliminate all existential hypotheses. *)
@@ -96,6 +108,10 @@ Ltac simplHyp invOne :=
     (** Similar logic to the cases for constructor injectivity above, but specialized to [Some], since the above cases won't deal with polymorphic constructors. *)
     | [ H : Some _ = Some _ |- _ ] => injection H; clear H
   end.
+
+Tactic Notation "simplHyp" constr(invOne) := simplHyp' invOne 1.
+
+Tactic Notation "simplHyp" constr(invOne) integer(n) := simplHyp' invOne n.
 
 (** Find some hypothesis to rewrite with, ensuring that [auto] proves all of the extra subgoals added by [rewrite]. *)
 Ltac rewriteHyp :=
@@ -175,10 +191,10 @@ Require Import JMeq.
 (** A more parameterized version of the famous [crush].  Extra arguments are:
    * - A tuple-list of lemmas we try [inster]-ing 
    * - A tuple-list of predicates we try inversion for *)
-Ltac crush' lemmas invOne :=
+Ltac crush'_0 lemmas invOne branches :=
   (** A useful combination of standard automation *)
   let sintuition := simpl in *; intuition; try subst;
-    repeat (simplHyp invOne; intuition; try subst); try congruence in
+    repeat (simplHyp' invOne branches; intuition; try subst); try congruence in
 
   (** A fancier version of [rewriter] from above, which uses [crush'] to discharge side conditions *)
   let rewriter := autorewrite with core in *;
@@ -187,11 +203,11 @@ Ltac crush' lemmas invOne :=
                 match P with
                   | context[JMeq] => fail 1 (** JMeq is too fancy to deal with here. *)
                   (* | _ => rewrite H by crush' lemmas invOne *)
-                  | _ = _ => rewrite H by crush' lemmas invOne 
-                  | forall t1, _ = _ => rewrite H by crush' lemmas invOne 
-                  | forall t1 t2, _ = _ => rewrite H by crush' lemmas invOne 
-                  | forall t1 t2 t3, _ = _ => rewrite H by crush' lemmas invOne 
-                  | forall t1 t2 t3 t4, _ = _ => rewrite H by crush' lemmas invOne 
+                  | _ = _ => rewrite H by crush'_0 lemmas invOne branches
+                  | forall t1, _ = _ => rewrite H by crush'_0 lemmas invOne branches
+                  | forall t1 t2, _ = _ => rewrite H by crush'_0 lemmas invOne branches
+                  | forall t1 t2 t3, _ = _ => rewrite H by crush'_0 lemmas invOne branches
+                  | forall t1 t2 t3 t4, _ = _ => rewrite H by crush'_0 lemmas invOne branches
                   (* This part is refactored, due to rewrite sometimes acts like apply :( *)
                 end
             end; autorewrite with core in *) in
@@ -206,14 +222,19 @@ Ltac crush' lemmas invOne :=
           (** ...or instantiating hypotheses... *)
             || appHyps ltac:(fun L => inster L L));
           (** ...and then simplifying hypotheses. *)
-          repeat (simplHyp invOne; intuition)); un_done
+          repeat (simplHyp' invOne branches; intuition)); un_done
       end;
       sintuition; rewriter; sintuition;
       (** End with a last attempt to prove an arithmetic fact with [lia], or prove any sort of fact in a context that is contradictory by reasoning that [lia] can do. *)
       try lia; try (exfalso; lia)).
 
+Tactic Notation "crush'" constr(a) constr(b) := crush'_0 a b 1.
+
+Tactic Notation "crush'" constr(a) constr(b) constr(n) :=
+  let n' := eval compute in n in crush'_0 a b n'.
+
 (** [crush] instantiates [crush'] with the simplest possible parameters. *)
-Ltac crush := crush' false fail.
+Ltac crush := crush' false false.
 
 (** * Wrap Program's [dependent destruction] in a slightly more pleasant form *)
 

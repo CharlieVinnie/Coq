@@ -288,7 +288,8 @@ Theorem if_false : forall b c1 c2,
     <{ if b then c1 else c2 end }>
     c2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  (* crush' false ceval. *)
+  crush. unfolds in H. simpl in H. unfolds. crush' false ceval 2.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (swap_if_branches)

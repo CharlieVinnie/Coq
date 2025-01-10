@@ -4,8 +4,8 @@ Imp.vo Imp.glob Imp.v.beautified Imp.required_vo: Imp.v /home/charlie/Coq/CoqLib
 Imp.vos Imp.vok Imp.required_vos: Imp.v /home/charlie/Coq/CoqLibs/Crush/Crush.vos /home/charlie/Coq/CoqLibs/tlc/src/LibTactics.vos Maps.vos
 Preface.vo Preface.glob Preface.v.beautified Preface.required_vo: Preface.v 
 Preface.vos Preface.vok Preface.required_vos: Preface.v 
-Equiv.vo Equiv.glob Equiv.v.beautified Equiv.required_vo: Equiv.v Maps.vo Imp.vo
-Equiv.vos Equiv.vok Equiv.required_vos: Equiv.v Maps.vos Imp.vos
+Equiv.vo Equiv.glob Equiv.v.beautified Equiv.required_vo: Equiv.v /home/charlie/Coq/CoqLibs/Crush/Crush.vo /home/charlie/Coq/CoqLibs/tlc/src/LibTactics.vo Maps.vo Imp.vo
+Equiv.vos Equiv.vok Equiv.required_vos: Equiv.v /home/charlie/Coq/CoqLibs/Crush/Crush.vos /home/charlie/Coq/CoqLibs/tlc/src/LibTactics.vos Maps.vos Imp.vos
 Hoare.vo Hoare.glob Hoare.v.beautified Hoare.required_vo: Hoare.v Maps.vo Imp.vo
 Hoare.vos Hoare.vok Hoare.required_vos: Hoare.v Maps.vos Imp.vos
 Hoare2.vo Hoare2.glob Hoare2.v.beautified Hoare2.required_vo: Hoare2.v Maps.vo Imp.vo Hoare.vo
