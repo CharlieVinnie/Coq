@@ -388,6 +388,8 @@ Proof.
   - (* E_WhileTrue *) (* immediate from the IH *)
     apply IHceval2. reflexivity.  Qed.
 
+Hint Resolve while_true_nonterm : core.
+
 (** **** Exercise: 2 stars, standard, optional (while_true_nonterm_informal)
 
     Explain what the lemma [while_true_nonterm] means in English.
@@ -401,13 +403,17 @@ Proof.
     Prove the following theorem. _Hint_: You'll want to use
     [while_true_nonterm] here. *)
 
+Lemma infinite_loop_no_terminate : forall st st', ~ st =[ while true do skip end]=> st'.
+Proof. gen_eq c:<{while true do skip end}>. induction 2;crush. Qed.
+
+Hint Resolve infinite_loop_no_terminate : core.
+
 Theorem while_true : forall b c,
   bequiv b <{true}>  ->
   cequiv
     <{ while b do c end }>
     <{ while true do skip end }>.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. unfold cequiv;crush lemma:(while_true_nonterm,infinite_loop_no_terminate). Qed.
 (** [] *)
 
 (** A more interesting fact about [while] commands is that any number
