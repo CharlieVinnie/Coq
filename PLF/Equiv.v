@@ -196,7 +196,7 @@ Theorem skip_right : forall c,
   cequiv
     <{ c ; skip }>
     c.
-Proof. unfold cequiv;crush' false ceval;eauto. Qed.
+Proof. unfold cequiv;crush inv:ceval;eauto. Qed.
 (** [] *)
 
 (** Similarly, here is a simple equivalence that optimizes [if]

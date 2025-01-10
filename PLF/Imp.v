@@ -902,7 +902,7 @@ Proof.
     match goal with
     | [ H : forall _, _ ==>b _ <-> beval _ = _ |- _ ] => apply H
     end : core.
-  Induct 1;crush' false (aexp,bexp,aevalR,bevalR);
+  Induct 1;crush inv: (aexp,bexp,aevalR,bevalR);
   try rewrite aeval_iff_aevalR in *;crush;
   try f_equal;crush.
 Qed.
@@ -1810,7 +1810,7 @@ Definition manual_grade_for_XtimesYinZ_spec : option (nat*string) := None.
 Theorem loop_never_stops : forall st st',
   ~(st =[ loop ]=> st').
 Proof.
-  introv H. gen_eq c:loop. induction H;crush' false @Logic.eq.
+  introv H. gen_eq c:loop. induction H;crush inv:@Logic.eq.
 Qed.
   (* intros st st' contra. unfold loop in contra.
   remember <{ while true do skip end }> as loopdef
@@ -2259,18 +2259,18 @@ Hint Constructors ceval : core.
 Theorem break_ignore : forall c st st' s,
      st =[ break; c ]=> st' / s ->
      st = st'.
-Proof. inversion 1;crush' false ceval. Qed.
+Proof. inversion 1;crush inv:ceval. Qed.
 
 Theorem while_continue : forall b c st st' s,
   st =[ while b do c end ]=> st' / s ->
   s = SContinue.
-Proof. inversion 1;crush' false ceval. Qed.
+Proof. inversion 1;crush inv:ceval. Qed.
 
 Theorem while_stops_on_break : forall b c st st',
   beval st b = true ->
   st =[ c ]=> st' / SBreak ->
   st =[ while b do c end ]=> st' / SContinue.
-Proof. inversion 2;crush' false ceval. Qed.
+Proof. inversion 2;crush inv:ceval. Qed.
 
 Theorem seq_continue : forall c1 c2 st st' st'',
   st =[ c1 ]=> st' / SContinue ->
@@ -2304,7 +2304,7 @@ Theorem ceval_deterministic: forall (c:com) st st1 st2 s1 s2,
      st1 = st2 /\ s1 = s2.
 Proof.
   introv H1. generalize dependent st2. generalize dependent s2.
-  induction H1;introv H2;crush' false ceval;inversion H2;
+  induction H1;introv H2;crush inv:ceval;inversion H2;
   repeat match goal with
   | [ IHceval : forall _ _, _ , H : _ |- _ ] => specialize (IHceval _ _ H);crush
   end;inversion H2;crush.

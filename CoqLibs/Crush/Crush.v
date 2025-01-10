@@ -191,7 +191,7 @@ Require Import JMeq.
 (** A more parameterized version of the famous [crush].  Extra arguments are:
    * - A tuple-list of lemmas we try [inster]-ing 
    * - A tuple-list of predicates we try inversion for *)
-Ltac crush'_0 lemmas invOne branches :=
+Ltac crush' lemmas invOne branches :=
   (** A useful combination of standard automation *)
   let sintuition := simpl in *; intuition; try subst;
     repeat (simplHyp' invOne branches; intuition; try subst); try congruence in
@@ -200,14 +200,15 @@ Ltac crush'_0 lemmas invOne branches :=
   let rewriter := autorewrite with core in *;
     repeat (match goal with
               | [ H : ?P |- _ ] =>
+              let rewrite_H := rewrite H by crush' lemmas invOne branches in
                 match P with
                   | context[JMeq] => fail 1 (** JMeq is too fancy to deal with here. *)
                   (* | _ => rewrite H by crush' lemmas invOne *)
-                  | _ = _ => rewrite H by crush'_0 lemmas invOne branches
-                  | forall t1, _ = _ => rewrite H by crush'_0 lemmas invOne branches
-                  | forall t1 t2, _ = _ => rewrite H by crush'_0 lemmas invOne branches
-                  | forall t1 t2 t3, _ = _ => rewrite H by crush'_0 lemmas invOne branches
-                  | forall t1 t2 t3 t4, _ = _ => rewrite H by crush'_0 lemmas invOne branches
+                  | _ = _ => rewrite_H
+                  | forall t1, _ = _ => rewrite_H
+                  | forall t1 t2, _ = _ => rewrite_H
+                  | forall t1 t2 t3, _ = _ => rewrite_H
+                  | forall t1 t2 t3 t4, _ = _ => rewrite_H
                   (* This part is refactored, due to rewrite sometimes acts like apply :( *)
                 end
             end; autorewrite with core in *) in
@@ -228,13 +229,33 @@ Ltac crush'_0 lemmas invOne branches :=
       (** End with a last attempt to prove an arithmetic fact with [lia], or prove any sort of fact in a context that is contradictory by reasoning that [lia] can do. *)
       try lia; try (exfalso; lia)).
 
-Tactic Notation "crush'" constr(a) constr(b) := crush'_0 a b 1.
+Tactic Notation "crush" := crush' false false 1.
 
-Tactic Notation "crush'" constr(a) constr(b) constr(n) :=
-  let n' := eval compute in n in crush'_0 a b n'.
+Tactic Notation "crush" "lemma:" constr(a) := crush' a false 1.
+
+Tactic Notation "crush" "inv:" constr(b) := crush' false b 1.
+
+Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) := crush' a b 1.
+
+Tactic Notation "crush" "width:" constr(n) :=
+  let n' := eval compute in n in crush' false false n'.
+
+Tactic Notation "crush" "lemma:" constr(a) "width:" constr(n) :=
+  let n' := eval compute in n in crush' a false n'.
+
+Tactic Notation "crush" "inv:" constr(b) "width:" constr(n) :=
+  let n' := eval compute in n in crush' false b n'.
+
+Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "width:" constr(n) :=
+  let n' := eval compute in n in crush' a b n'.
+
+
+From TLC Require Import LibTactics.
+
+Ltac unfolder ls := all ltac:(fun x => unfolds x) ls.
 
 (** [crush] instantiates [crush'] with the simplest possible parameters. *)
-Ltac crush := crush' false false.
+(* Ltac crush := crush' false false. *)
 
 (** * Wrap Program's [dependent destruction] in a slightly more pleasant form *)
 
