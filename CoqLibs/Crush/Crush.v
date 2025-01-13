@@ -229,6 +229,14 @@ Ltac crush' lemmas invOne branches :=
       (** End with a last attempt to prove an arithmetic fact with [lia], or prove any sort of fact in a context that is contradictory by reasoning that [lia] can do. *)
       try lia; try (exfalso; lia)).
 
+Ltac crush_with_aux cru tac :=
+  solve [tac;cru].
+  (* app ltac:(fun x => x;cru;crush_with_aux cru tac) tac. *)
+
+Ltac crush_with lemmas invOne branches tac :=
+  let cru := crush' lemmas invOne branches in
+    cru; crush_with_aux cru tac.
+
 Tactic Notation "crush" := crush' false false 1.
 
 Tactic Notation "crush" "lemma:" constr(a) := crush' a false 1.
@@ -248,6 +256,28 @@ Tactic Notation "crush" "inv:" constr(b) "width:" constr(n) :=
 
 Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "width:" constr(n) :=
   let n' := eval compute in n in crush' a b n'.
+
+
+Tactic Notation "crush" "with" ltac(t) := crush_with false false 1 t.
+
+Tactic Notation "crush" "lemma:" constr(a) "with" ltac(t) := crush_with a false 1 t.
+
+Tactic Notation "crush" "inv:" constr(b) "with" ltac(t) := crush_with false b 1 t.
+
+Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "with" ltac(t) := crush_with a b 1 t.
+
+Tactic Notation "crush" "width:" constr(n) "with" ltac(t) :=
+  let n' := eval compute in n in crush_with false false n' t.
+
+Tactic Notation "crush" "lemma:" constr(a) "width:" constr(n) "with" ltac(t) :=
+  let n' := eval compute in n in crush_with a false n' t.
+
+Tactic Notation "crush" "inv:" constr(b) "width:" constr(n) "with" ltac(t) :=
+  let n' := eval compute in n in crush_with false b n' t.
+
+Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "width:" constr(n) "with" ltac(t) :=
+  let n' := eval compute in n in crush_with a b n' t.
+
 
 From TLC Require Import LibTactics.
 

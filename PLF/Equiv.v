@@ -408,12 +408,22 @@ Proof. gen_eq c:<{while true do skip end}>. induction 2;crush. Qed.
 
 Hint Resolve infinite_loop_no_terminate : core.
 
+Ltac crush_with_aux cru tac :=
+  app ltac:(fun x => x;cru;crush_with_aux cru tac) tac.
+
+Ltac crush_with lemmas invOne branches tac :=
+  let cru := crush' lemmas invOne branches in
+    cru; crush_with_aux cru tac.
+
 Theorem while_true : forall b c,
   bequiv b <{true}>  ->
   cequiv
     <{ while b do c end }>
     <{ while true do skip end }>.
-Proof. unfold cequiv;crush lemma:(while_true_nonterm,infinite_loop_no_terminate). Qed.
+Proof.
+  crush lemma:(while_true_nonterm,infinite_loop_no_terminate) with unfold cequiv.
+Qed.
+(* Proof. unfold cequiv;crush lemma:(while_true_nonterm,infinite_loop_no_terminate). Qed. *)
 (** [] *)
 
 (** A more interesting fact about [while] commands is that any number
@@ -456,8 +466,7 @@ Proof.
 (** **** Exercise: 2 stars, standard, optional (seq_assoc) *)
 Theorem seq_assoc : forall c1 c2 c3,
   cequiv <{(c1;c2);c3}> <{c1;(c2;c3)}>.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. unfold cequiv;crush inv: ceval;eauto.
 (** [] *)
 
 (** Proving program properties involving assignments is one place
