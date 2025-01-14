@@ -763,7 +763,14 @@ Theorem CSeq_congruence : forall c1 c1' c2 c2',
   cequiv c1 c1' -> cequiv c2 c2' ->
   cequiv <{ c1;c2 }> <{ c1';c2' }>.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfolds cequiv;crush.
+  - inverts H1. crush inv: ceval with match goal with
+    (* | [ H: _=[_]=>_ |- _ ] => inverts H *)
+    | [ H1:_, H2:_ |- _ ] => rewrite H1 in H2
+    end.
+  - inverts H1. rewrite H in H4. rewrite H0 in H7. eauto.
+  - inverts H1. rewrite <- H in H4. rewrite <- H0 in H7. eauto.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (CIf_congruence) *)
