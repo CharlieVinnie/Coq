@@ -944,7 +944,7 @@ Qed.
 Theorem leb_iff : forall n m,
   n <=? m = true <-> n <= m.
 Proof.
-  induction n;induction m;crush' n_le_m__Sn_le_Sm fail.
+  induction n;induction m;crush lemma:n_le_m__Sn_le_Sm.
 Qed.
 
 Theorem leb_true_trans : forall n m o,
@@ -1800,7 +1800,7 @@ Hint Resolve napp_star_r : core.
 Local Ltac napp_m_solver :=
   match goal with
   | [ m: nat, H: forall (x:nat), _ |- _ ] =>
-    specialize (H m); list_solver crush
+    specialize (H m); list_solver ltac:(crush)
   end.
 
 (** Complete the proof below. Several of the lemmas about [le] that
@@ -1831,7 +1831,7 @@ Proof.
   - exists (s1++x), x0, x1. crush;try solve_apps;napp_m_solver.
   - exists x, x0, x1. crush.
   - exists x, x0, x1. crush.
-  - crush' pumping_constant_0_false le.
+  - crush lemma:pumping_constant_0_false inv:le.
   - Hint Rewrite app_nil_r : core.
     Hint Rewrite <- plus_n_O : core.
 Admitted.
@@ -1856,6 +1856,9 @@ Admitted.
 
 Lemma le_two_ways : forall a b, a<=b \/ b<=a.
 Proof. crush. Qed.
+
+Lemma nil_decide : forall T (l:list T), l=[] \/ l<>[].
+Proof. destruct l;crush. right. crush. Qed.
 
 Lemma pumping : forall T (re : reg_exp T) s,
   s =~ re ->
@@ -1897,10 +1900,14 @@ Proof.
   - exists x, x0, x1. crush.
   - exists x, x0, x1. crush.
   - exists x, x0, x1. crush.
-  - crush' pumping_constant_0_false le.
+  - crush lemma:pumping_constant_0_false inv:le.
   - Hint Rewrite app_nil_r : core.
     Hint Rewrite <- plus_n_O : core.
-Admitted.
+    destruct (nil_decide _ s1) eqn: E;try subst;simpl in *;crush.
+    destruct (le_two_ways (pumping_constant re) (length s1));crush.
+    + exists x, x0, (x1++s2). crush;try solve_apps;napp_m_solver.
+    + exists (@nil T), s1, s2. crush.
+Qed.
   (* intros T re s Hmatch.
   induction Hmatch
     as [ | x | s1 re1 s2 re2 Hmatch1 IH1 Hmatch2 IH2
