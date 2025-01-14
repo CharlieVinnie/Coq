@@ -1741,14 +1741,6 @@ Hint Resolve napp_star : core.
 
 Ltac solve_apps := repeat rewrite app_assoc; reflexivity.
 
-Lemma weak_pumping : forall T (re : reg_exp T) s,
-  s =~ re ->
-  pumping_constant re <= length s ->
-  exists s1 s2 s3,
-    s = s1 ++ s2 ++ s3 /\
-    s2 <> [] /\
-    forall m, s1 ++ napp m s2 ++ s3 =~ re.
-
 Ltac get_sub_helper l cont :=
   match l with
   | ?a ++ ?b =>
@@ -1803,6 +1795,17 @@ Local Ltac napp_m_solver :=
     specialize (H m); list_solver ltac:(crush)
   end.
 
+Lemma nil_decide : forall T (l:list T), l=[] \/ l<>[].
+Proof. destruct l;crush. right. crush. Qed.
+
+Lemma weak_pumping : forall T (re : reg_exp T) s,
+  s =~ re ->
+  pumping_constant re <= length s ->
+  exists s1 s2 s3,
+    s = s1 ++ s2 ++ s3 /\
+    s2 <> [] /\
+    forall m, s1 ++ napp m s2 ++ s3 =~ re.
+
 (** Complete the proof below. Several of the lemmas about [le] that
     were in an optional exercise earlier in this chapter may also be
     useful. *)
@@ -1834,7 +1837,9 @@ Proof.
   - crush lemma:pumping_constant_0_false inv:le.
   - Hint Rewrite app_nil_r : core.
     Hint Rewrite <- plus_n_O : core.
-Admitted.
+    destruct (nil_decide _ s1) eqn: E;try subst;simpl in *;crush.
+    exists (@nil T), s1, s2;crush.
+Qed.
     (* destruct s2;crush.
     + exists x,x0,x1. crush.
     + exists s1,(x::s2),(@nil T). crush. inversion H1. *)
@@ -1856,9 +1861,6 @@ Admitted.
 
 Lemma le_two_ways : forall a b, a<=b \/ b<=a.
 Proof. crush. Qed.
-
-Lemma nil_decide : forall T (l:list T), l=[] \/ l<>[].
-Proof. destruct l;crush. right. crush. Qed.
 
 Lemma pumping : forall T (re : reg_exp T) s,
   s =~ re ->
