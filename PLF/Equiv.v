@@ -466,7 +466,7 @@ Proof.
 (** **** Exercise: 2 stars, standard, optional (seq_assoc) *)
 Theorem seq_assoc : forall c1 c2 c3,
   cequiv <{(c1;c2);c3}> <{c1;(c2;c3)}>.
-Proof. unfold cequiv;crush inv: ceval;eauto.
+Proof. unfold cequiv;crush inv: ceval;eauto. Qed.
 (** [] *)
 
 (** Proving program properties involving assignments is one place
@@ -490,12 +490,22 @@ Proof.
     apply Hx.
 Qed.
 
+Hint Rewrite t_update_same : core.
+
 (** **** Exercise: 2 stars, standard, especially useful (assign_aequiv) *)
 Theorem assign_aequiv : forall (X : string) (a : aexp),
   aequiv <{ X }> a ->
   cequiv <{ skip }> <{ X := a }>.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfolder (aequiv,cequiv);crush.
+  - inverts H0. assert (st' =[ X:=a ]=> (X!->aeval st' a;st')) as H' by crush.
+    crush with match goal with 
+      | [ H1:_, H2:_ |- _ ] => rewrite <- H1 in H2
+    end.
+  - inverts H0. crush with match goal with 
+      | [ H:_ |- _ ] => rewrite <- H
+    end.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard (equiv_classes) *)
