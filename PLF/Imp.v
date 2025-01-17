@@ -1921,33 +1921,7 @@ Ltac crush'' lemmas invOne branches :=
 Theorem no_whiles_terminating :
   forall c, no_whilesR c -> forall st, exists st', st =[ c ]=> st'.
 Proof.
-  induction 1.
-  - crush;eauto.
-  - crush;eauto. admit.
-  - crush'' false false 1;eauto.
-    simpl in *; intuition; try subst;
-    repeat (simplHyp' invOne branches; intuition; try subst); try congruence.
-    repeat (match goal with
-              | [ H : ?P |- _ ] =>
-              let rewrite_H := rewrite H by crush' lemmas invOne branches in
-                match P with
-                  (* | _ => rewrite H by crush' lemmas invOne *)
-                  | _ = _ => rewrite_H
-                  | forall t1, _ = _ => rewrite_H
-                  | forall t1 t2, _ = _ => rewrite_H
-                  | forall t1 t2 t3, _ = _ => rewrite_H
-                  | forall t1 t2 t3 t4, _ = _ => rewrite_H
-                  (* This part is refactored, due to rewrite sometimes acts like apply :( *)
-                end
-    end; autorewrite with core in *).
-    appHyps ltac:(fun L => inster L L).
-    repeat (simplHyp' false 1; intuition).
-    appHyps ltac:(fun L => inster L L).
-    repeat (simplHyp' false 1; intuition).
-    appHyps ltac:(fun L => inster L L).
-    repeat (simplHyp' false 1; intuition).
-    timeout 3 crush.
-  (* induction 1;crush;eauto. *)
+  induction 1;crush;eauto.
   - exists (X0!->aeval st a;st);crush.
   - destruct (IHno_whilesR1 st). destruct (IHno_whilesR2 x). eauto.
   - destruct (IHno_whilesR1 st). destruct (IHno_whilesR2 st).

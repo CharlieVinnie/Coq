@@ -227,9 +227,7 @@ Hint Resolve t_update_eq : core.
 Theorem t_update_neq : forall (A : Type) (m : total_map A) x1 x2 v,
   x1 <> x2 ->
   (x1 !-> v ; m) x2 = m x2.
-Proof. unfold t_update; crush lemma: String.eqb_neq.
-  inster String.eqb_neq String.eqb_neq.
-Qed.
+Proof. unfold t_update; crush lemma: String.eqb_neq. Qed.
 (** [] *)
 
 Hint Resolve t_update_neq : core.

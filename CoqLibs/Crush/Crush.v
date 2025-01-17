@@ -130,21 +130,6 @@ Hint Rewrite <- app_assoc.
 (** Devious marker predicate to use for encoding state within proof goals *)
 Definition done (T : Type) (x : T) := True.
 
-Definition existing (T : Type) (x : T) := True.
-
-Ltac set_existings :=
-  repeat appHyps ltac:(fun H =>
-    match goal with
-    | [ H : existing _ |- _ ] => fail 1
-    | [ H' : existing H |- _ ] => fail 1
-    | _ => assert (existing H) by constructor
-    end).
-
-Ltac unset_existings :=
-  repeat match goal with
-    | [ H : existing _ |- _ ] => clear H
-  end.
-
 (** Try a new instantiation of a universally quantified fact, proved by [e].
    * [trace] is an accumulator recording which instantiations we choose. *)
 Ltac inster e trace :=
@@ -153,11 +138,7 @@ Ltac inster e trace :=
     | forall x : _, _ =>
       (** Yes, so let's pick the first context variable of the right type. *)
       match goal with
-        | [ H : _ |- _ ] =>
-          match goal with
-          (* | [ H' : existing H |- _ ] => inster (e H) (trace, H) *)
-          | _ => inster (e H) (trace, H)
-          end
+        | [ H : _ |- _ ] => inster (e H) (trace, H)
         | _ => fail 2
       end
     | _ =>
@@ -204,12 +185,18 @@ Ltac un_done :=
            | [ H : done _ |- _ ] => clear H
          end.
 
+Ltac doit n tac :=
+  match n with
+  | O => idtac
+  | S ?n' => try (tac; doit n' tac)
+  end.
+
 Require Import JMeq.
 
 (** A more parameterized version of the famous [crush].  Extra arguments are:
    * - A tuple-list of lemmas we try [inster]-ing 
    * - A tuple-list of predicates we try inversion for *)
-Ltac crush' lemmas invOne branches :=
+Ltac crush' lemmas invOne branches inster_lim :=
   (** A useful combination of standard automation *)
   let sintuition := simpl in *; intuition; try subst;
     repeat (simplHyp' invOne branches; intuition; try subst); try congruence in
@@ -237,13 +224,11 @@ Ltac crush' lemmas invOne branches :=
         | false => idtac (** No lemmas?  Nothing to do here *)
         | _ => *)
           (** Try a loop of instantiating lemmas... *)
-          (* set_existings; *)
-          repeat ((app ltac:(fun L => inster L L) lemmas
+          (doit inster_lim ltac:((app ltac:(fun L => inster L L) lemmas
           (** ...or instantiating hypotheses... *)
-            || appHyps ltac:(fun L => inster L L));
+            || appHyps ltac:(fun L => inster L L)));
           (** ...and then simplifying hypotheses. *)
           repeat (simplHyp' invOne branches; intuition)); un_done;
-          unset_existings;
       (* end; *)
       sintuition; rewriter; sintuition;
       (** End with a last attempt to prove an arithmetic fact with [lia], or prove any sort of fact in a context that is contradictory by reasoning that [lia] can do. *)
@@ -253,50 +238,50 @@ Ltac crush_with_aux cru tac :=
   solve [tac;cru].
   (* app ltac:(fun x => x;cru;crush_with_aux cru tac) tac. *)
 
-Ltac crush_with lemmas invOne branches tac :=
-  let cru := crush' lemmas invOne branches in
+Ltac crush_with lemmas invOne branches tac lim :=
+  let cru := crush' lemmas invOne branches lim in
     cru; crush_with_aux cru tac.
 
-Tactic Notation "crush" := crush' false false 1.
+Tactic Notation "crush" := crush' false false 1 4.
 
-Tactic Notation "crush" "lemma:" constr(a) := crush' a false 1.
+Tactic Notation "crush" "lemma:" constr(a) := crush' a false 1 4.
 
-Tactic Notation "crush" "inv:" constr(b) := crush' false b 1.
+Tactic Notation "crush" "inv:" constr(b) := crush' false b 1 4.
 
-Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) := crush' a b 1.
+Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) := crush' a b 1 4.
 
 Tactic Notation "crush" "width:" constr(n) :=
-  let n' := eval compute in n in crush' false false n'.
+  let n' := eval compute in n in crush' false false n' 4.
 
 Tactic Notation "crush" "lemma:" constr(a) "width:" constr(n) :=
-  let n' := eval compute in n in crush' a false n'.
+  let n' := eval compute in n in crush' a false n' 4.
 
 Tactic Notation "crush" "inv:" constr(b) "width:" constr(n) :=
-  let n' := eval compute in n in crush' false b n'.
+  let n' := eval compute in n in crush' false b n' 4.
 
 Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "width:" constr(n) :=
-  let n' := eval compute in n in crush' a b n'.
+  let n' := eval compute in n in crush' a b n' 4.
 
 
-Tactic Notation "crush" "with" ltac(t) := crush_with false false 1 t.
+Tactic Notation "crush" "with" ltac(t) := crush_with false false 1 t 4.
 
-Tactic Notation "crush" "lemma:" constr(a) "with" ltac(t) := crush_with a false 1 t.
+Tactic Notation "crush" "lemma:" constr(a) "with" ltac(t) := crush_with a false 1 t 4.
 
-Tactic Notation "crush" "inv:" constr(b) "with" ltac(t) := crush_with false b 1 t.
+Tactic Notation "crush" "inv:" constr(b) "with" ltac(t) := crush_with false b 1 t 4.
 
-Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "with" ltac(t) := crush_with a b 1 t.
+Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "with" ltac(t) := crush_with a b 1 t 4.
 
 Tactic Notation "crush" "width:" constr(n) "with" ltac(t) :=
-  let n' := eval compute in n in crush_with false false n' t.
+  let n' := eval compute in n in crush_with false false n' t 4.
 
 Tactic Notation "crush" "lemma:" constr(a) "width:" constr(n) "with" ltac(t) :=
-  let n' := eval compute in n in crush_with a false n' t.
+  let n' := eval compute in n in crush_with a false n' t 4.
 
 Tactic Notation "crush" "inv:" constr(b) "width:" constr(n) "with" ltac(t) :=
-  let n' := eval compute in n in crush_with false b n' t.
+  let n' := eval compute in n in crush_with false b n' t 4.
 
 Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "width:" constr(n) "with" ltac(t) :=
-  let n' := eval compute in n in crush_with a b n' t.
+  let n' := eval compute in n in crush_with a b n' t 4.
 
 
 From TLC Require Import LibTactics.
