@@ -1878,10 +1878,76 @@ Qed.
 
 (* FILL IN HERE *)
 
+(** A more parameterized version of the famous [crush].  Extra arguments are:
+   * - A tuple-list of lemmas we try [inster]-ing 
+   * - A tuple-list of predicates we try inversion for *)
+Ltac crush'' lemmas invOne branches :=
+  (** A useful combination of standard automation *)
+  let sintuition := simpl in *; intuition; try subst;
+    repeat (simplHyp' invOne branches; intuition; try subst); try congruence in
+
+  (** A fancier version of [rewriter] from above, which uses [crush'] to discharge side conditions *)
+  let rewriter := autorewrite with core in *;
+    repeat (match goal with
+              | [ H : ?P |- _ ] =>
+              let rewrite_H := rewrite H by crush' lemmas invOne branches in
+                match P with
+                  (* | _ => rewrite H by crush' lemmas invOne *)
+                  | _ = _ => rewrite_H
+                  | forall t1, _ = _ => rewrite_H
+                  | forall t1 t2, _ = _ => rewrite_H
+                  | forall t1 t2 t3, _ = _ => rewrite_H
+                  | forall t1 t2 t3 t4, _ = _ => rewrite_H
+                  (* This part is refactored, due to rewrite sometimes acts like apply :( *)
+                end
+            end; autorewrite with core in *) in
+
+  (** Now the main sequence of heuristics: *)
+    (sintuition; rewriter;
+      (* match lemmas with
+        | false => idtac (** No lemmas?  Nothing to do here *)
+        | _ => *)
+          (** Try a loop of instantiating lemmas... *)
+          do 5 ((app ltac:(fun L => inster L L) lemmas
+          (** ...or instantiating hypotheses... *)
+            || appHyps ltac:(fun L => inster L L));
+          (** ...and then simplifying hypotheses. *)
+          repeat (simplHyp' invOne branches; intuition)); un_done;
+      (* end; *)
+      sintuition; rewriter; sintuition;
+      (** End with a last attempt to prove an arithmetic fact with [lia], or prove any sort of fact in a context that is contradictory by reasoning that [lia] can do. *)
+      try lia; try (exfalso; lia)).
+
 Theorem no_whiles_terminating :
   forall c, no_whilesR c -> forall st, exists st', st =[ c ]=> st'.
 Proof.
-  induction 1;crush;eauto.
+  induction 1.
+  - crush;eauto.
+  - crush;eauto. admit.
+  - crush'' false false 1;eauto.
+    simpl in *; intuition; try subst;
+    repeat (simplHyp' invOne branches; intuition; try subst); try congruence.
+    repeat (match goal with
+              | [ H : ?P |- _ ] =>
+              let rewrite_H := rewrite H by crush' lemmas invOne branches in
+                match P with
+                  (* | _ => rewrite H by crush' lemmas invOne *)
+                  | _ = _ => rewrite_H
+                  | forall t1, _ = _ => rewrite_H
+                  | forall t1 t2, _ = _ => rewrite_H
+                  | forall t1 t2 t3, _ = _ => rewrite_H
+                  | forall t1 t2 t3 t4, _ = _ => rewrite_H
+                  (* This part is refactored, due to rewrite sometimes acts like apply :( *)
+                end
+    end; autorewrite with core in *).
+    appHyps ltac:(fun L => inster L L).
+    repeat (simplHyp' false 1; intuition).
+    appHyps ltac:(fun L => inster L L).
+    repeat (simplHyp' false 1; intuition).
+    appHyps ltac:(fun L => inster L L).
+    repeat (simplHyp' false 1; intuition).
+    timeout 3 crush.
+  (* induction 1;crush;eauto. *)
   - exists (X0!->aeval st a;st);crush.
   - destruct (IHno_whilesR1 st). destruct (IHno_whilesR2 x). eauto.
   - destruct (IHno_whilesR1 st). destruct (IHno_whilesR2 st).

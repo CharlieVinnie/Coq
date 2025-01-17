@@ -130,6 +130,21 @@ Hint Rewrite <- app_assoc.
 (** Devious marker predicate to use for encoding state within proof goals *)
 Definition done (T : Type) (x : T) := True.
 
+Definition existing (T : Type) (x : T) := True.
+
+Ltac set_existings :=
+  repeat appHyps ltac:(fun H =>
+    match goal with
+    | [ H : existing _ |- _ ] => fail 1
+    | [ H' : existing H |- _ ] => fail 1
+    | _ => assert (existing H) by constructor
+    end).
+
+Ltac unset_existings :=
+  repeat match goal with
+    | [ H : existing _ |- _ ] => clear H
+  end.
+
 (** Try a new instantiation of a universally quantified fact, proved by [e].
    * [trace] is an accumulator recording which instantiations we choose. *)
 Ltac inster e trace :=
@@ -139,7 +154,10 @@ Ltac inster e trace :=
       (** Yes, so let's pick the first context variable of the right type. *)
       match goal with
         | [ H : _ |- _ ] =>
-          inster (e H) (trace, H)
+          match goal with
+          (* | [ H' : existing H |- _ ] => inster (e H) (trace, H) *)
+          | _ => inster (e H) (trace, H)
+          end
         | _ => fail 2
       end
     | _ =>
@@ -215,16 +233,18 @@ Ltac crush' lemmas invOne branches :=
 
   (** Now the main sequence of heuristics: *)
     (sintuition; rewriter;
-      match lemmas with
+      (* match lemmas with
         | false => idtac (** No lemmas?  Nothing to do here *)
-        | _ =>
+        | _ => *)
           (** Try a loop of instantiating lemmas... *)
+          (* set_existings; *)
           repeat ((app ltac:(fun L => inster L L) lemmas
           (** ...or instantiating hypotheses... *)
             || appHyps ltac:(fun L => inster L L));
           (** ...and then simplifying hypotheses. *)
-          repeat (simplHyp' invOne branches; intuition)); un_done
-      end;
+          repeat (simplHyp' invOne branches; intuition)); un_done;
+          unset_existings;
+      (* end; *)
       sintuition; rewriter; sintuition;
       (** End with a last attempt to prove an arithmetic fact with [lia], or prove any sort of fact in a context that is contradictory by reasoning that [lia] can do. *)
       try lia; try (exfalso; lia)).
