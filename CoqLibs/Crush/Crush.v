@@ -169,6 +169,28 @@ Ltac inster_inst e trace :=
       end
   end.
 
+Definition get_topmost_auxT (T:Type) (x:T) := True.
+
+Ltac clear_topmost_auxT :=
+  repeat match goal with
+  | [ H : get_topmost_auxT _ |- _ ] => clear H
+  end.
+
+Ltac get_topmost pred cont :=
+  match goal with
+  | [ H : _ |- _ ] =>
+    pred H;
+    match goal with
+    | [ H' : get_topmost_auxT H |- _ ] => fail 1
+    | _ =>
+      assert (get_topmost_auxT H) by constructor;
+      first [
+        get_topmost pred cont |
+        cont H; clear_topmost_auxT
+      ]
+    end
+  end.
+
 (** Try a new instantiation of a universally quantified fact, proved by [e].
    * [trace] is an accumulator recording which instantiations we choose. *)
 Ltac inster e trace :=
