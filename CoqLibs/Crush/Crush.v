@@ -195,6 +195,17 @@ Ltac doit n tac :=
 
 Require Import JMeq.
 
+(* Ltac gen_foralls :=
+  repeat match goal with
+  | [ H : forall _, _ |- _ ] => generalize H; clear H
+  end.
+
+Ltac take_foralls_to_bottom := intros;gen_foralls;intros. *)
+
+Ltac inster_gen H :=
+  inster H H; generalize H; clear H.
+  
+
 (** A more parameterized version of the famous [crush].  Extra arguments are:
    * - A tuple-list of lemmas we try [inster]-ing 
    * - A tuple-list of predicates we try inversion for *)
@@ -222,13 +233,15 @@ Ltac crush' lemmas invOne branches inster_lim :=
 
   (** Now the main sequence of heuristics: *)
     (sintuition; rewriter;
+      (* take_foralls_to_bottom; *)
       (* match lemmas with
         | false => idtac (** No lemmas?  Nothing to do here *)
         | _ => *)
+          doit inster_lim ltac:(
           (** Try a loop of instantiating lemmas... *)
-          doit inster_lim ltac:((app ltac:(fun L => inster L L) lemmas
+            (app ltac:(fun L => inster L L) lemmas
           (** ...or instantiating hypotheses... *)
-            || appHyps ltac:(fun L => inster L L;generalize L;clear L;let L':=fresh "L" in intro L'));
+            || appHyps inster_gen); intros;
           (** ...and then simplifying hypotheses. *)
           repeat (simplHyp' invOne branches; intuition)); un_done;
       (* end; *)
