@@ -161,7 +161,9 @@ Ltac inster_inst e trace :=
                     | _ => idtac
                   end) trace;
                 (** Pick a new name for our new instantiation. *)
-                let i := fresh "i" in (pose (i := e);
+                (* let i := fresh "i" in (pose (i := e);
+                  assert (done (trace, i)) by constructor) *)
+                let i := fresh "i" in (specialize e as i;
                   assert (done (trace, i)) by constructor)
             end
       end
@@ -195,16 +197,20 @@ Ltac doit n tac :=
 
 Require Import JMeq.
 
-(* Ltac gen_foralls :=
-  repeat match goal with
-  | [ H : forall _, _ |- _ ] => generalize H; clear H
+Definition used (T:Type) (x:T) := True.
+
+Ltac not_used H :=
+  match goal with
+  | [ H' : used H |- _ ] => fail 1
+  | _ => idtac
   end.
 
-Ltac take_foralls_to_bottom := intros;gen_foralls;intros. *)
+Ltac set_used H := assert (used H) by constructor.
 
-Ltac inster_gen H :=
-  inster H H; generalize H; clear H.
-  
+Ltac unset_used :=
+  repeat match goal with
+           | [ H : used _ |- _ ] => clear H
+         end.
 
 (** A more parameterized version of the famous [crush].  Extra arguments are:
    * - A tuple-list of lemmas we try [inster]-ing 
@@ -241,7 +247,9 @@ Ltac crush' lemmas invOne branches inster_lim :=
           (** Try a loop of instantiating lemmas... *)
             (app ltac:(fun L => inster L L) lemmas
           (** ...or instantiating hypotheses... *)
-            || appHyps inster_gen); intros;
+            || appHyps ltac:(fun L => not_used L;inster L L;set_used L)
+            || unset_used
+            );
           (** ...and then simplifying hypotheses. *)
           repeat (simplHyp' invOne branches; intuition)); un_done;
       (* end; *)
