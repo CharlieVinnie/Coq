@@ -240,7 +240,7 @@ Require Import JMeq.
 (** A more parameterized version of the famous [crush].  Extra arguments are:
    * - A tuple-list of lemmas we try [inster]-ing 
    * - A tuple-list of predicates we try inversion for *)
-Ltac crush' lemmas invOne branches inster_lim :=
+Ltac crush' lemmas invOne branches :=
   (** A useful combination of standard automation *)
   let sintuition := simpl in *; intuition; try subst;
     repeat (simplHyp' invOne branches; intuition; try subst); try congruence in
@@ -282,50 +282,29 @@ Ltac crush_with_aux cru tac :=
   solve [tac;cru].
   (* app ltac:(fun x => x;cru;crush_with_aux cru tac) tac. *)
 
-Ltac crush_with lemmas invOne branches tac lim :=
-  let cru := crush' lemmas invOne branches lim in
+Ltac crush_with lemmas invOne branches tac :=
+  let cru := crush' lemmas invOne branches in
     cru; crush_with_aux cru tac.
 
-Tactic Notation "crush" := crush' false false 1 10.
+Tactic Notation "crush" := crush' false false 1 .
 
-Tactic Notation "crush" "lemma:" constr(a) := crush' a false 1 10.
+Tactic Notation "crush" "lemma:" constr(a) := crush' a false 1 .
 
-Tactic Notation "crush" "inv:" constr(b) := crush' false b 1 10.
+Tactic Notation "crush" "inv:" constr(b) := crush' false b 1 .
 
-Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) := crush' a b 1 10.
+Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) := crush' a b 1 .
 
 Tactic Notation "crush" "width:" constr(n) :=
-  let n' := eval compute in n in crush' false false n' 10.
+  let n' := eval compute in n in crush' false false n' .
 
 Tactic Notation "crush" "lemma:" constr(a) "width:" constr(n) :=
-  let n' := eval compute in n in crush' a false n' 10.
+  let n' := eval compute in n in crush' a false n' .
 
 Tactic Notation "crush" "inv:" constr(b) "width:" constr(n) :=
-  let n' := eval compute in n in crush' false b n' 10.
+  let n' := eval compute in n in crush' false b n' .
 
 Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "width:" constr(n) :=
-  let n' := eval compute in n in crush' a b n' 10.
-
-
-Tactic Notation "crush" "with" ltac(t) := crush_with false false 1 t 10.
-
-Tactic Notation "crush" "lemma:" constr(a) "with" ltac(t) := crush_with a false 1 t 10.
-
-Tactic Notation "crush" "inv:" constr(b) "with" ltac(t) := crush_with false b 1 t 10.
-
-Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "with" ltac(t) := crush_with a b 1 t 10.
-
-Tactic Notation "crush" "width:" constr(n) "with" ltac(t) :=
-  let n' := eval compute in n in crush_with false false n' t 10.
-
-Tactic Notation "crush" "lemma:" constr(a) "width:" constr(n) "with" ltac(t) :=
-  let n' := eval compute in n in crush_with a false n' t 10.
-
-Tactic Notation "crush" "inv:" constr(b) "width:" constr(n) "with" ltac(t) :=
-  let n' := eval compute in n in crush_with false b n' t 10.
-
-Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "width:" constr(n) "with" ltac(t) :=
-  let n' := eval compute in n in crush_with a b n' t 10.
+  let n' := eval compute in n in crush' a b n' .
 
 
 From TLC Require Import LibTactics.

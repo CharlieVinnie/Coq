@@ -765,8 +765,7 @@ Theorem CSeq_congruence : forall c1 c1' c2 c2',
   cequiv c1 c1' -> cequiv c2 c2' ->
   cequiv <{ c1;c2 }> <{ c1';c2' }>.
 Proof.
-  unfolds cequiv;crush' false ceval 1 100;eauto.
-  - inster H H. generalize H. clear H. 
+  unfolds cequiv;crush' false ceval 1 0;eauto.
 Qed.
 (** [] *)
 
