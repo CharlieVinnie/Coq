@@ -307,6 +307,27 @@ Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "width:" constr(n) :
   let n' := eval compute in n in crush' a b n' .
 
 
+Tactic Notation "crush" "with" ltac(t) := crush_with false false 1 t .
+
+Tactic Notation "crush" "lemma:" constr(a) "with" ltac(t) := crush_with a false 1 t .
+
+Tactic Notation "crush" "inv:" constr(b) "with" ltac(t) := crush_with false b 1 t .
+
+Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "with" ltac(t) := crush_with a b 1 t .
+
+Tactic Notation "crush" "width:" constr(n) "with" ltac(t) :=
+  let n' := eval compute in n in crush_with false false n' t .
+
+Tactic Notation "crush" "lemma:" constr(a) "width:" constr(n) "with" ltac(t) :=
+  let n' := eval compute in n in crush_with a false n' t .
+
+Tactic Notation "crush" "inv:" constr(b) "width:" constr(n) "with" ltac(t) :=
+  let n' := eval compute in n in crush_with false b n' t .
+
+Tactic Notation "crush" "lemma:" constr(a) "inv:" constr(b) "width:" constr(n) "with" ltac(t) :=
+  let n' := eval compute in n in crush_with a b n' t .
+
+
 From TLC Require Import LibTactics.
 
 Ltac unfolder ls := all ltac:(fun x => try unfolds x) ls.

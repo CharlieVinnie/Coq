@@ -421,7 +421,7 @@ Theorem while_true : forall b c,
     <{ while b do c end }>
     <{ while true do skip end }>.
 Proof.
-  unfold cequiv;crush' (while_true_nonterm,infinite_loop_no_terminate) false 0 10.
+  unfold cequiv;crush lemma:(while_true_nonterm,infinite_loop_no_terminate).
 Qed.
 (* Proof. unfold cequiv;crush lemma:(while_true_nonterm,infinite_loop_no_terminate). Qed. *)
 (** [] *)
@@ -640,6 +640,18 @@ Proof.
   rewrite H12. apply H23.
 Qed.
 
+Hint Resolve refl_aequiv : core.
+Hint Resolve refl_bequiv : core.
+Hint Resolve refl_cequiv : core.
+
+Hint Resolve sym_aequiv : core.
+Hint Resolve sym_bequiv : core.
+Hint Resolve sym_cequiv : core.
+
+Hint Resolve trans_aequiv : core.
+Hint Resolve trans_bequiv : core.
+Hint Resolve trans_cequiv : core.
+
 (* ================================================================= *)
 (** ** Behavioral Equivalence Is a Congruence *)
 
@@ -765,7 +777,7 @@ Theorem CSeq_congruence : forall c1 c1' c2 c2',
   cequiv c1 c1' -> cequiv c2 c2' ->
   cequiv <{ c1;c2 }> <{ c1';c2' }>.
 Proof.
-  unfolds cequiv;crush' false ceval 1 0;eauto.
+  unfolds cequiv;crush inv:ceval;eauto.
 Qed.
 (** [] *)
 
@@ -775,7 +787,11 @@ Theorem CIf_congruence : forall b b' c1 c1' c2 c2',
   cequiv <{ if b then c1 else c2 end }>
          <{ if b' then c1' else c2' end }>.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfolds bequiv;unfolds cequiv;crush inv:ceval;
+  match goal with
+  | [ |- ?st =[ if ?b then _ else _ end ]=> _ ] => destruct (beval st b) eqn: ?
+  end;crush inv:ceval width:2.
+Qed.
 (** [] *)
 
 (** For example, here are two equivalent programs and a proof of their
@@ -1124,6 +1140,12 @@ Proof.
 
        completing the case.  [] *)
 
+Lemma fold_aexp_to_aeval : forall a a', fold_constants_aexp a = a' ->
+  forall st, aeval st a = aeval st a'. Admitted.
+
+Lemma fold_aexp_to_aeval_num : forall a (n:nat), fold_constants_aexp a = n ->
+  forall st, aeval st a = n. Admitted.
+
 Theorem fold_constants_bexp_sound:
   btrans_sound fold_constants_bexp.
 Proof.
@@ -1156,7 +1178,16 @@ Proof.
        become constants after folding *)
       simpl. destruct (n =? n0); reflexivity.
   - (* BLe *)
-    (* FILL IN HERE *) admit.
+    unfold fold_constants_bexp;
+    destruct (fold_constants_aexp a1) eqn: A1;
+    destruct (fold_constants_aexp a2) eqn: A2.
+    + crush lemma:fold_aexp_to_aeval;
+      destruct (aeval st a1 <=? aeval st a2) eqn: E;crush.
+    + crush lemma:fold_aexp_to_aeval.
+    + specialize (fold_aexp_to_aeval _ _ A2 st). crush lemma:fold_aexp_to_aeval.
+    + specialize (fold_aexp_to_aeval _ _ A1 st). crush lemma:fold_aexp_to_aeval.
+    + specialize (fold_aexp_to_aeval _ _ A1 st). crush lemma:fold_aexp_to_aeval.
+    + specialize (fold_aexp_to_aeval _ _ A1 st). crush lemma:fold_aexp_to_aeval.
   - (* BGt *)
     (* FILL IN HERE *) admit.
   - (* BNot *)
