@@ -169,43 +169,61 @@ Ltac inster_inst e trace :=
       end
   end.
 
-Definition get_topmost_auxT (T:Type) (x:T) := True.
+Definition topmost_auxT (T:Type) (x:T) := True.
 
 Ltac clear_topmost_auxT :=
   repeat match goal with
-  | [ H : get_topmost_auxT _ |- _ ] => clear H
+  | [ H : topmost_auxT _ |- _ ] => clear H
   end.
 
-Ltac get_topmost pred cont :=
+Ltac call_topmost pred cont :=
   match goal with
   | [ H : _ |- _ ] =>
-    pred H;
     match goal with
-    | [ H' : get_topmost_auxT H |- _ ] => fail 1
+    | [ H' : topmost_auxT H |- _ ] => fail 1
     | _ =>
-      assert (get_topmost_auxT H) by constructor;
+      pred H;
+      assert (topmost_auxT H) by constructor;
       first [
-        get_topmost pred cont |
+        call_topmost pred cont |
         cont H; clear_topmost_auxT
       ]
     end
   end.
 
-(** Try a new instantiation of a universally quantified fact, proved by [e].
-   * [trace] is an accumulator recording which instantiations we choose. *)
+Definition flag (T:Type) (x:T) := True.
+
+Ltac flagged H := match goal with [ H' : flag H |- _ ] => idtac end.
+
+Ltac not_flagged H := match goal with [ H' : flag H |- _ ] => fail 1 | _ => idtac end.
+
+Ltac set_flag H := assert (flag H) by constructor.
+
+Ltac unset_flags :=
+  repeat match goal with
+           | [ H : flag _ |- _ ] => clear H
+         end.
+
+Ltac isProp H :=
+  match type of H with ?T =>
+  match type of T with Prop => idtac end end.
+
+Ltac notProp H :=
+  match type of H with ?T =>
+  match type of T with Prop => fail 1 | _ => idtac end end.
+
 Ltac inster e trace :=
-  (** Does [e] have any quantifiers left? *)
   match type of e with
     | forall x : _, _ =>
-      (** Yes, so let's pick the first context variable of the right type. *)
       match goal with
-        | [ H : _ |- _ ] => inster (e H) (trace, H)
+        | [ H : _ |- _ ] => 
+          first [ isProp H | flagged H ];
+          inster (e H) (trace, H)
         | _ => fail 2
       end
     | _ => inster_inst e trace
   end.
 
-(** After a round of application with the above, we will have a lot of junk [done] markers to clean up; hence this tactic. *)
 Ltac un_done :=
   repeat match goal with
            | [ H : done _ |- _ ] => clear H
@@ -218,21 +236,6 @@ Ltac doit n tac :=
   end.
 
 Require Import JMeq.
-
-Definition used (T:Type) (x:T) := True.
-
-Ltac not_used H :=
-  match goal with
-  | [ H' : used H |- _ ] => fail 1
-  | _ => idtac
-  end.
-
-Ltac set_used H := assert (used H) by constructor.
-
-Ltac unset_used :=
-  repeat match goal with
-           | [ H : used _ |- _ ] => clear H
-         end.
 
 (** A more parameterized version of the famous [crush].  Extra arguments are:
    * - A tuple-list of lemmas we try [inster]-ing 
@@ -261,20 +264,16 @@ Ltac crush' lemmas invOne branches inster_lim :=
 
   (** Now the main sequence of heuristics: *)
     (sintuition; rewriter;
-      (* take_foralls_to_bottom; *)
-      (* match lemmas with
-        | false => idtac (** No lemmas?  Nothing to do here *)
-        | _ => *)
-          doit inster_lim ltac:(
-          (** Try a loop of instantiating lemmas... *)
-            (app ltac:(fun L => inster L L) lemmas
-          (** ...or instantiating hypotheses... *)
-            || appHyps ltac:(fun L => not_used L;inster L L;set_used L)
-            || unset_used
-            );
-          (** ...and then simplifying hypotheses. *)
-          repeat (simplHyp' invOne branches; intuition)); un_done;
-      (* end; *)
+      repeat appHyps ltac:(fun H =>
+        notProp H;not_flagged H;set_flag H
+      );
+      repeat ltac:(
+        (app ltac:(fun L => inster L L) lemmas
+        || appHyps ltac:(fun L => inster L L)
+        );
+        repeat (simplHyp' invOne branches; intuition)
+      );
+      un_done; unset_flags;
       sintuition; rewriter; sintuition;
       (** End with a last attempt to prove an arithmetic fact with [lia], or prove any sort of fact in a context that is contradictory by reasoning that [lia] can do. *)
       try lia; try (exfalso; lia)).

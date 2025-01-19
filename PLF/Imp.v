@@ -1921,12 +1921,9 @@ Ltac crush'' lemmas invOne branches :=
 Theorem no_whiles_terminating :
   forall c, no_whilesR c -> forall st, exists st', st =[ c ]=> st'.
 Proof.
-  induction 1;crush;eauto.
+  induction 1;do 2 (crush;eauto).
   - exists (X0!->aeval st a;st);crush.
-  - skip.
-  (* - destruct (IHno_whilesR1 st). destruct (IHno_whilesR2 x). eauto.
-  - destruct (IHno_whilesR1 st). destruct (IHno_whilesR2 st).
-    destruct (beval st a) eqn: E;crush;eauto. *)
+  - destruct (beval st a) eqn: E;crush;eauto.
 Qed.
 
 (* Do not modify the following line: *)
