@@ -1595,16 +1595,32 @@ Ltac simulate_trivial :=
 
 Hint Rewrite t_update_eq : core.
 
+Lemma just_a_lemma_1 : forall x1 a1, var_not_used_in_aexp x1 a1 ->
+  forall a2 st, aeval (x1 !-> aeval st a1; st) (subst_aexp x1 a1 a2) = aeval (x1 !-> aeval st a1; st) a2.
+Proof.
+  Induct 4;crush;
+    destruct (String.eqb_spec x1 x0);crush;rewrite aeval_weakening;auto.
+Qed.
+
 Theorem var_not_used_subst_equiv : var_not_used_subst_equiv_property.
 Proof.
-  unfolds;crush. induction a2;crush;try solve[apply CSeq_congruence;crush].
-  - destruct (String.eqb_spec x1 x);crush;
-      unfolds;crush inv:ceval;
-        simulate_trivial;rewrite aeval_weakening;crush.
-  - apply CSeq_congruence;crush.
-    apply CAsgn_congruence.
-
-
+  unfolds;crush;unfolds;crush.
+  - 
+    inverts H0.
+    do 3 match goal with
+    | [ H: ?st1 =[ ?x:=?a ]=> ?st2 |- _ ] =>
+      (assert (st2 = (x!->aeval st1 a;st));[auto|fail]) ||
+      assert (st2 = (x!->aeval st1 a;st)) by
+        (eapply ceval_deterministic;[apply H|auto])
+    end.
+    assert (st'0 = (x1!->aeval st a1;st)) by
+      (eapply ceval_deterministic;[apply H3|auto]).
+    subst. assert (st' = (x2!->aeval (x1!->aeval st a1;st) a2;x1!->aeval st a1;st)) by admit.
+    crush. simulate_trivial. crush lemma:just_a_lemma_1.
+  - inverts H0. assert (st'0 = (x1!->aeval st a1;st)) by admit.
+    subst. assert (st' = (x2!->aeval (x1!->aeval st a1;st) (subst_aexp x1 a1 a2);x1!->aeval st a1;st)) by admit.
+    crush. simulate_trivial. rewrite just_a_lemma_1;auto.
+Admitted. 
 
 (** **** Exercise: 3 stars, standard (inequiv_exercise)
 
