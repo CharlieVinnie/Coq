@@ -1277,40 +1277,125 @@ Qed.
      optimize_0plus_com
 *)
 
-Fixpoint optimize_0plus_aexp (a : aexp) : aexp
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint optimize_0plus_aexp (a : aexp) : aexp :=
+  match a with
+  | ANum n => ANum n
+  | AId x => AId x
+  | <{0+a2}> => optimize_0plus_aexp a2
+  | <{a1+a2}> => <{optimize_0plus_aexp a1 + optimize_0plus_aexp a2}>
+  | <{a1-a2}> => <{optimize_0plus_aexp a1 - optimize_0plus_aexp a2}>
+  | <{a1*a2}> => <{optimize_0plus_aexp a1 * optimize_0plus_aexp a2}>
+  end.
 
-Fixpoint optimize_0plus_bexp (b : bexp) : bexp
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint optimize_0plus_bexp (b : bexp) : bexp :=
+  match b with
+  | <{true}> => <{true}>
+  | <{false}> => <{false}>
+  | <{a1=a2}> => <{optimize_0plus_aexp a1=optimize_0plus_aexp a2}>
+  | <{a1<>a2}> => <{optimize_0plus_aexp a1<>optimize_0plus_aexp a2}>
+  | <{a1<=a2}> => <{optimize_0plus_aexp a1<=optimize_0plus_aexp a2}>
+  | <{a1>a2}> => <{optimize_0plus_aexp a1>optimize_0plus_aexp a2}>
+  | <{~b0}> => <{~optimize_0plus_bexp b0}>
+  | <{b1&&b2}> => <{optimize_0plus_bexp b1&&optimize_0plus_bexp b2}>
+  end.
 
-Fixpoint optimize_0plus_com (c : com) : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint optimize_0plus_com (c : com) : com :=
+  match c with
+  | <{skip}> => <{skip}>
+  | <{x:=a}> => <{x:=optimize_0plus_aexp a}>
+  | <{c1;c2}> => <{optimize_0plus_com c1;optimize_0plus_com c2}>
+  | <{if b then c1 else c2 end}> =>
+      <{if optimize_0plus_bexp b then optimize_0plus_com c1 else optimize_0plus_com c2 end}>
+  | <{while b do c0 end}> =>
+      <{while optimize_0plus_bexp b do optimize_0plus_com c0 end}>
+  end.
 
 Example test_optimize_0plus:
     optimize_0plus_com
        <{ while X <> 0 do X := 0 + X - 1 end }>
   =    <{ while X <> 0 do X := X - 1 end }>.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
 
 (** Prove that these three functions are sound, as we did for
     [fold_constants_*].  Make sure you use the congruence lemmas in the
     proof of [optimize_0plus_com] -- otherwise it will be _long_! *)
 
+Lemma aequiv_plus : forall a1 a2 a3 a4,
+  aequiv a1 a2 -> aequiv a3 a4 -> aequiv <{a1+a3}> <{a2+a4}>.
+Proof. unfolds aequiv;crush. Qed.
+
+Lemma aequiv_minus : forall a1 a2 a3 a4,
+  aequiv a1 a2 -> aequiv a3 a4 -> aequiv <{a1-a3}> <{a2-a4}>.
+Proof. unfolds aequiv;crush. Qed.
+
+Lemma aequiv_times : forall a1 a2 a3 a4,
+  aequiv a1 a2 -> aequiv a3 a4 -> aequiv <{a1*a3}> <{a2*a4}>.
+Proof. unfolds aequiv;crush. Qed.
+
+Hint Resolve aequiv_plus : core.
+Hint Resolve aequiv_minus : core.
+Hint Resolve aequiv_times : core.
+
+Ltac Xmatch :=
+  match goal with
+  | [ |- context[match ?x with | _ => _ end ] ] => destruct x eqn:?
+  end.
+
 Theorem optimize_0plus_aexp_sound:
   atrans_sound optimize_0plus_aexp.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfolds;induction a;crush;Xmatch;crush;Xmatch;eauto.
+Qed.
+
+Hint Resolve optimize_0plus_aexp_sound : core.
+
+Lemma bequiv_eq : forall b1 b2 b3 b4,
+  aequiv b1 b2 -> aequiv b3 b4 -> bequiv <{b1=b3}> <{b2=b4}>.
+Proof. unfolds aequiv;unfolds bequiv;crush. Qed.
+
+Lemma bequiv_neq : forall b1 b2 b3 b4,
+  aequiv b1 b2 -> aequiv b3 b4 -> bequiv <{b1<>b3}> <{b2<>b4}>.
+Proof. unfolds aequiv;unfolds bequiv;crush. Qed.
+
+Lemma bequiv_le : forall b1 b2 b3 b4,
+  aequiv b1 b2 -> aequiv b3 b4 -> bequiv <{b1<=b3}> <{b2<=b4}>.
+Proof. unfolds aequiv;unfolds bequiv;crush. Qed.
+
+Lemma bequiv_gt : forall b1 b2 b3 b4,
+  aequiv b1 b2 -> aequiv b3 b4 -> bequiv <{b1>b3}> <{b2>b4}>.
+Proof. unfolds aequiv;unfolds bequiv;crush. Qed.
+
+Lemma bequiv_not : forall b1 b2,
+  bequiv b1 b2 -> bequiv <{~b1}> <{~b2}>.
+Proof. unfolds aequiv;unfolds bequiv;crush. Qed.
+
+Lemma bequiv_and : forall b1 b2 b3 b4,
+  bequiv b1 b2 -> bequiv b3 b4 -> bequiv <{b1&&b3}> <{b2&&b4}>.
+Proof. unfolds aequiv;unfolds bequiv;crush. Qed.
+
+Hint Resolve bequiv_eq : core.
+Hint Resolve bequiv_neq : core.
+Hint Resolve bequiv_le : core.
+Hint Resolve bequiv_gt : core.
+Hint Resolve bequiv_not : core.
+Hint Resolve bequiv_and : core.
 
 Theorem optimize_0plus_bexp_sound :
   btrans_sound optimize_0plus_bexp.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. unfolds;induction b;crush. Qed.
+
+Hint Resolve optimize_0plus_bexp_sound : core.
+
+Hint Resolve CAsgn_congruence : core.
+Hint Resolve CSeq_congruence : core.
+Hint Resolve CWhile_congruence : core.
+Hint Resolve CIf_congruence : core.
 
 Theorem optimize_0plus_com_sound :
   ctrans_sound optimize_0plus_com.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. unfolds;induction c;crush. Qed.
+
+Hint Resolve optimize_0plus_com_sound : core.
 
 (** Finally, let's define a compound optimizer on commands that first
     folds constants (using [fold_constants_com]) and then eliminates
@@ -1320,10 +1405,11 @@ Definition optimizer (c : com) := optimize_0plus_com (fold_constants_com c).
 
 (** Prove that this optimizer is sound. *)
 
+Hint Resolve fold_constants_com_sound : core.
+
 Theorem optimizer_sound :
   ctrans_sound optimizer.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. unfolds;eauto. Qed.
 (** [] *)
 
 (* ################################################################# *)
