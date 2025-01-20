@@ -1552,18 +1552,59 @@ Inductive var_not_used_in_aexp (x : string) : aexp -> Prop :=
       var_not_used_in_aexp x a2 ->
       var_not_used_in_aexp x (<{ a1 * a2 }>).
 
+Hint Constructors var_not_used_in_aexp : core.
+
 Lemma aeval_weakening : forall x st a ni,
   var_not_used_in_aexp x a ->
   aeval (x !-> ni ; st) a = aeval st a.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. Induct 3;crush inv:var_not_used_in_aexp. Qed.
 
 (** Using [var_not_used_in_aexp], formalize and prove a correct version
     of [subst_equiv_property]. *)
 
-(* FILL IN HERE
+(* Lemma not_used_subst_aexp_eq : forall  *)
 
-    [] *)
+Definition var_not_used_subst_equiv_property : Prop :=
+  forall x1 a1,
+  var_not_used_in_aexp x1 a1 ->
+  forall x2 a2,
+  cequiv <{ x1 := a1; x2 := a2 }>
+         <{ x1 := a1; x2 := subst_aexp x1 a1 a2 }>.
+
+Ltac simulate_trivial :=
+  repeat match goal with
+  | [ |- ?st =[ ?c ]=> ?st' ] =>
+    match c with
+    | <{skip}> => apply E_Skip
+    | <{?X := ?a}> => eapply E_Asgn;try reflexivity
+    | <{?c1;?c2}> => eapply E_Seq
+    | <{ if ?x then ?c1 else ?c2 end }> =>
+      let x' := eval compute in (beval st x) in
+      match x' with
+      | true => apply E_IfTrue
+      | false => apply E_IfFalse
+      end
+    | <{ while ?x do ?c0 end }> =>
+      let x' := eval compute in (beval st x) in
+      match x' with
+      | true => eapply E_WhileTrue
+      | false => apply E_WhileFalse
+      end
+    end
+  end;crush.
+
+Hint Rewrite t_update_eq : core.
+
+Theorem var_not_used_subst_equiv : var_not_used_subst_equiv_property.
+Proof.
+  unfolds;crush. induction a2;crush;try solve[apply CSeq_congruence;crush].
+  - destruct (String.eqb_spec x1 x);crush;
+      unfolds;crush inv:ceval;
+        simulate_trivial;rewrite aeval_weakening;crush.
+  - apply CSeq_congruence;crush.
+    apply CAsgn_congruence.
+
+
 
 (** **** Exercise: 3 stars, standard (inequiv_exercise)
 
