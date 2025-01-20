@@ -1141,10 +1141,8 @@ Proof.
        completing the case.  [] *)
 
 Lemma fold_aexp_to_aeval : forall a a', fold_constants_aexp a = a' ->
-  forall st, aeval st a = aeval st a'. Admitted.
-
-Lemma fold_aexp_to_aeval_num : forall a (n:nat), fold_constants_aexp a = n ->
-  forall st, aeval st a = n. Admitted.
+  forall st, aeval st a = aeval st a'.
+Proof. crush;rewrite fold_constants_aexp_sound;crush. Qed.
 
 Theorem fold_constants_bexp_sound:
   btrans_sound fold_constants_bexp.
@@ -1180,16 +1178,19 @@ Proof.
   - (* BLe *)
     unfold fold_constants_bexp;
     destruct (fold_constants_aexp a1) eqn: A1;
-    destruct (fold_constants_aexp a2) eqn: A2.
-    + crush lemma:fold_aexp_to_aeval;
-      destruct (aeval st a1 <=? aeval st a2) eqn: E;crush.
-    + crush lemma:fold_aexp_to_aeval.
-    + specialize (fold_aexp_to_aeval _ _ A2 st). crush lemma:fold_aexp_to_aeval.
-    + specialize (fold_aexp_to_aeval _ _ A1 st). crush lemma:fold_aexp_to_aeval.
-    + specialize (fold_aexp_to_aeval _ _ A1 st). crush lemma:fold_aexp_to_aeval.
-    + specialize (fold_aexp_to_aeval _ _ A1 st). crush lemma:fold_aexp_to_aeval.
+    destruct (fold_constants_aexp a2) eqn: A2;
+    try(
+      unfold beval;rewrite <- A1;rewrite <- A2;repeat rewrite <- fold_constants_aexp_sound;reflexivity
+    ).
+    crush lemma:fold_aexp_to_aeval;destruct (aeval st a1 <=? aeval st a2) eqn: E;crush.
   - (* BGt *)
-    (* FILL IN HERE *) admit.
+    unfold fold_constants_bexp;
+    destruct (fold_constants_aexp a1) eqn: A1;
+    destruct (fold_constants_aexp a2) eqn: A2;
+    try(
+      unfold beval;rewrite <- A1;rewrite <- A2;repeat rewrite <- fold_constants_aexp_sound;reflexivity
+    ).
+    crush lemma:fold_aexp_to_aeval;destruct (aeval st a1 <=? aeval st a2) eqn: E;crush.
   - (* BNot *)
     simpl. remember (fold_constants_bexp b) as b' eqn:Heqb'.
     rewrite IHb.
@@ -1200,12 +1201,15 @@ Proof.
     remember (fold_constants_bexp b2) as b2' eqn:Heqb2'.
     rewrite IHb1. rewrite IHb2.
     destruct b1'; destruct b2'; reflexivity.
-(* FILL IN HERE *) Admitted.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (fold_constants_com_sound)
 
     Complete the [while] case of the following proof. *)
+
+Lemma bequiv_fold_bexp : forall b, bequiv b (fold_constants_bexp b).
+Proof. unfold bequiv;crush;rewrite fold_constants_bexp_sound;crush. Qed.
 
 Theorem fold_constants_com_sound :
   ctrans_sound fold_constants_com.
@@ -1231,7 +1235,13 @@ Proof.
       apply trans_cequiv with c2; try assumption.
       apply if_false; assumption.
   - (* while *)
-    (* FILL IN HERE *) Admitted.
+    destruct (fold_constants_bexp b) eqn:?;
+    try solve[apply CWhile_congruence;crush lemma:bequiv_fold_bexp];
+    match goal with
+    | [ H: _ = <{true}> |- _ ] => apply while_true;rewrite <- H
+    | [ H: _ = <{false}> |- _ ] => apply while_false;rewrite <- H
+    end;apply bequiv_fold_bexp.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
