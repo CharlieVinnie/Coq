@@ -1595,6 +1595,27 @@ Ltac simulate_trivial :=
 
 Hint Rewrite t_update_eq : core.
 
+Ltac simulate c st :=
+  match c with
+  | <{skip}> => st
+  | <{?X := ?a}> => constr:(X!->aeval st a;st)
+  | <{?c1;?c2}> => simulate c2 ltac:(simulate c1 st)
+  end.
+
+Ltac unify_ceval H :=
+  match type of H with
+  | ?st1 =[ ?c ]=> ?st2 =>
+      let st3 := simulate c st1 in
+        assert (st2 = st3) by
+          (eapply ceval_deterministic;[apply H|simulate_trivial]);
+        clear H;substs
+  end.
+
+Ltac unify_cevals :=
+  repeat match goal with
+  | [ H: ?st1 =[ ?c ]=> ?st2 |- _ ] => unify_ceval H
+  end.
+
 Lemma just_a_lemma_1 : forall x1 a1, var_not_used_in_aexp x1 a1 ->
   forall a2 st, aeval (x1 !-> aeval st a1; st) (subst_aexp x1 a1 a2) = aeval (x1 !-> aeval st a1; st) a2.
 Proof.
@@ -1604,23 +1625,9 @@ Qed.
 
 Theorem var_not_used_subst_equiv : var_not_used_subst_equiv_property.
 Proof.
-  unfolds;crush;unfolds;crush.
-  - 
-    inverts H0.
-    do 3 match goal with
-    | [ H: ?st1 =[ ?x:=?a ]=> ?st2 |- _ ] =>
-      (assert (st2 = (x!->aeval st1 a;st));[auto|fail]) ||
-      assert (st2 = (x!->aeval st1 a;st)) by
-        (eapply ceval_deterministic;[apply H|auto])
-    end.
-    assert (st'0 = (x1!->aeval st a1;st)) by
-      (eapply ceval_deterministic;[apply H3|auto]).
-    subst. assert (st' = (x2!->aeval (x1!->aeval st a1;st) a2;x1!->aeval st a1;st)) by admit.
-    crush. simulate_trivial. crush lemma:just_a_lemma_1.
-  - inverts H0. assert (st'0 = (x1!->aeval st a1;st)) by admit.
-    subst. assert (st' = (x2!->aeval (x1!->aeval st a1;st) (subst_aexp x1 a1 a2);x1!->aeval st a1;st)) by admit.
-    crush. simulate_trivial. rewrite just_a_lemma_1;auto.
-Admitted. 
+  unfolds;crush;unfolds;crush;
+  unify_cevals; simulate_trivial; rewrite just_a_lemma_1;auto.
+Qed.
 
 (** **** Exercise: 3 stars, standard (inequiv_exercise)
 
