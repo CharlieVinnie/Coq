@@ -276,7 +276,7 @@ Ltac crush' lemmas invOne branches :=
       un_done; unset_flags;
       sintuition; rewriter; sintuition;
       (** End with a last attempt to prove an arithmetic fact with [lia], or prove any sort of fact in a context that is contradictory by reasoning that [lia] can do. *)
-      try lia; try (exfalso; lia)).
+      try lia; try (exfalso; lia)); try discriminate.
 
 Ltac crush_with_aux cru tac :=
   solve [tac;cru].

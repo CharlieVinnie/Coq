@@ -1852,7 +1852,7 @@ Ltac state_simplify H :=
   repeat (rewrite t_update_neq in H;[idtac|solve[discriminate]]);
   simpl in H.
 
-Ltac exploit_state H x :=
+Ltac gen_state H x :=
   match type of H with
   | ?st1 = ?st2 =>
     let H' := fresh "H" in
@@ -1860,21 +1860,23 @@ Ltac exploit_state H x :=
       state_simplify H'
   end.
 
-Definition vars (T:Type) (x:T) := True.
+Ltac exploit_state H :=
+  gen_state H X;
+  gen_state H Y;
+  gen_state H Z;
+  gen_state H W.
 
-Ltac get_vars st :=
-  lazymatch st with
-  | (?X!->_; ?st') => constr: ((X, (get_vars st')))
-  | _ => tt
-  (* | (?X!->_; ?st') => constr:((X, ltac:(get_vars st')))
-  | _ => tt *)
-  end.
-
-Ltac qwq H :=
+Ltac destruct_ceval H :=
   match type of H with
-  | ?st1 = ?st2 =>
-    let x1 := get_vars st1 in
-      idtac x1
+  | _ =[_]=> _ =>
+    let H1:=fresh "H1" in
+    let H2:=fresh "H2" in
+    let H3:=fresh "H3" in
+    inverts H as H1 H2 H3;
+    try destruct_ceval H1;
+    try destruct_ceval H2;
+    try destruct_ceval H3
+  | _ => idtac
   end.
 
 Theorem ptwice_cequiv_pcopy :
@@ -1884,11 +1886,7 @@ Proof.
   specialize (H empty_st (Y!->1; X!->2)).
   assert (empty_st =[ havoc X; havoc Y ]=> (Y!->1; X!->2))
     as H0 by simulate_trivial_havoc.
-  rewrite H in H0. inverts H0 as _ H1. inverts H1 as H1.
-  qwq H1.
-  exploit_state H1 X.
-  exploit_state H1 Y.
-  crush.
+  rewrite H in H0. destruct_ceval H0. exploit_state H1. crush.
 Qed.
 
 (** The definition of program equivalence we are using here has some
@@ -1924,13 +1922,20 @@ Definition p2 : com :=
 
 Lemma p1_may_diverge : forall st st', st X <> 0 ->
   ~ st =[ p1 ]=> st'.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  Hint Rewrite -> eqb_eq : core.
+  introv H1 H2. remember p1 as p eqn:E.
+  induction H2;try discriminate;inverts E;
+  try apply IHceval2; crush inv:ceval.
+Qed.
 
 Lemma p2_may_diverge : forall st st', st X <> 0 ->
   ~ st =[ p2 ]=> st'.
 Proof.
-(* FILL IN HERE *) Admitted.
-(** [] *)
+  introv H1 H2. remember p2 as p eqn:E.
+  induction H2;try discriminate;inverts E;
+  try apply IHceval2; crush inv:ceval.
+Qed.
 
 (** **** Exercise: 4 stars, advanced (p1_p2_equiv)
 
@@ -1938,8 +1943,15 @@ Proof.
     equivalent. *)
 
 Theorem p1_p2_equiv : cequiv p1 p2.
-Proof. (* FILL IN HERE *) Admitted.
-(** [] *)
+Proof.
+  Hint Rewrite <- eqb_eq : core.
+  unfolds. intros st. destruct (eqb_spec (st X) 0).
+  - intuition;unfolder (p1,p2);
+    inverts H;crush;rewrite <- eqb_eq in *;crush.
+  - intuition;
+    [destruct (p1_may_diverge _ _ n H)|
+     destruct (p2_may_diverge _ _ n H)].
+Qed.
 
 (** **** Exercise: 4 stars, advanced (p3_p4_inequiv)
 
@@ -1959,8 +1971,12 @@ Definition p4 : com :=
      Z := 1 }>.
 
 Theorem p3_p4_inequiv : ~ cequiv p3 p4.
-Proof. (* FILL IN HERE *) Admitted.
-(** [] *)
+Proof.
+  unfold cequiv. intuition.
+  specialize (H (X!->1) (Z!->0;X!->0;Z!->1;X!->1)).
+  assert ((X !-> 1) =[ p3 ]=> (Z !-> 0; X !-> 0; Z !-> 1; X !-> 1)) as H0
+    by (unfold p3;simulate_trivial_havoc).
+  rewrite H in H0. destruct_ceval H0. exploit_state H1. crush.
 
 (** **** Exercise: 5 stars, advanced, optional (p5_p6_equiv)
 
