@@ -2041,8 +2041,12 @@ Theorem swap_noninterfering_assignments: forall l1 l2 a1 a2,
     <{ l1 := a1; l2 := a2 }>
     <{ l2 := a2; l1 := a1 }>.
 Proof.
-(* FILL IN HERE *) Admitted.
-(** [] *)
+  unfolds cequiv;intros;split;intros H2;
+    inverts H2; unify_cevals;
+    rewrite aeval_weakening by crush;
+    rewrite t_update_permute by crush;
+    simulate_trivial; rewrite aeval_weakening;crush.
+Qed.
 
 (** **** Exercise: 4 stars, standard, optional (for_while_equiv)
 
@@ -2092,31 +2096,77 @@ Definition capprox (c1 c2 : com) : Prop := forall (st st' : state),
 (** Find two programs [c3] and [c4] such that neither approximates
     the other. *)
 
-Definition c3 : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
-Definition c4 : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition c3 : com := <{X:=1}>.
+Definition c4 : com := <{X:=2}>.
+
+Lemma state_unify : forall T (x:string) (st1 st2:total_map T),
+  st1=st2 -> st1 x = st2 x.
+Proof. crush. Qed.
+
+Ltac state_simplify H :=
+  repeat rewrite t_update_shadow in H;
+  repeat rewrite t_update_eq in H;
+  repeat (rewrite t_update_neq in H;[idtac|solve[discriminate]]);
+  simpl in H.
+
+Ltac gen_state H x :=
+  match type of H with
+  | ?st1 = ?st2 =>
+    let H' := fresh "H" in
+      specialize (state_unify _ x _ _ H) as H';
+      state_simplify H'
+  end.
+
+Ltac exploit_state H :=
+  gen_state H X;
+  gen_state H Y;
+  gen_state H Z;
+  gen_state H W.
+
+Ltac destruct_ceval H :=
+  match type of H with
+  | _ =[_]=> _ =>
+    let H1:=fresh "H1" in
+    let H2:=fresh "H2" in
+    let H3:=fresh "H3" in
+    inverts H as H1 H2 H3;
+    try destruct_ceval H1;
+    try destruct_ceval H2;
+    try destruct_ceval H3
+  | _ => idtac
+  end.
+
 
 Theorem c3_c4_different : ~ capprox c3 c4 /\ ~ capprox c4 c3.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  unfold capprox. intuition.
+  - assert ( empty_st =[c3]=> (X!->1) ) as H' by (unfold c3;simulate_trivial).
+    lets H0: H H'. destruct_ceval H0. exploit_state H1. crush.
+  - assert ( empty_st =[c4]=> (X!->2) ) as H' by (unfold c4;simulate_trivial).
+    lets H0: H H'. destruct_ceval H0. exploit_state H1. crush.
+Qed.
 
 (** Find a program [cmin] that approximates every other program. *)
 
-Definition cmin : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition cmin : com := <{while true do skip end}>.
 
 Theorem cmin_minimal : forall c, capprox cmin c.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  unfold capprox. introv H. lets []: infinite_loop_no_terminate H.
+Qed.
 
 (** Finally, find a non-trivial property which is preserved by
     program approximation (when going from left to right). *)
 
-Definition zprop (c : com) : Prop
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition zprop (c : com) : Prop :=
+  forall st, exists st', st=[c]=>st'.
 
 Theorem zprop_preserving : forall c c',
   zprop c -> capprox c c' -> zprop c'.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  unfolder (zprop,capprox). crush. exists x. crush.
+Qed.
+  
 (** [] *)
 
 (* 2024-08-25 08:25 *)
