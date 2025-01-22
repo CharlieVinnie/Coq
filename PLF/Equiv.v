@@ -1636,8 +1636,10 @@ Qed.
 Theorem inequiv_exercise:
   ~ cequiv <{ while true do skip end }> <{ skip }>.
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  unfolds. intros H. unfolds in H.
+  apply (infinite_loop_no_terminate empty_st empty_st).
+  rewrite H. auto.
+Qed.
 
 (* ################################################################# *)
 (** * Extended Exercise: Nondeterministic Imp *)
@@ -1753,21 +1755,22 @@ Inductive ceval : com -> state -> state -> Prop :=
       st  =[ c ]=> st' ->
       st' =[ while b do c end ]=> st'' ->
       st  =[ while b do c end ]=> st''
-(* FILL IN HERE *)
+  | E_Havoc : forall st x n,
+      st =[ havoc x ]=> (x!->n; st)
 
   where "st =[ c ]=> st'" := (ceval c st st').
 
 (** As a sanity check, the following claims should be provable for
     your definition: *)
 
+Hint Constructors ceval : core.
+
 Example havoc_example1 : empty_st =[ havoc X ]=> (X !-> 0).
-Proof.
-(* FILL IN HERE *) Admitted.
+Proof. eauto. Qed.
 
 Example havoc_example2 :
   empty_st =[ skip; havoc Z ]=> (Z !-> 42).
-Proof.
-(* FILL IN HERE *) Admitted.
+Proof. eauto. Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_Check_rule_for_HAVOC : option (nat*string) := None.
@@ -1794,14 +1797,36 @@ Definition pYX :=
 (** If you think they are equivalent, prove it. If you think they are
     not, prove that. *)
 
+Ltac simulate_trivial_havoc :=
+  repeat match goal with
+  | [ |- ?st =[ ?c ]=> ?st' ] =>
+    match c with
+    | <{skip}> => apply E_Skip
+    | <{?X := ?a}> => eapply E_Asgn;try reflexivity
+    | <{?c1;?c2}> => eapply E_Seq
+    | <{havoc _}> => eapply E_Havoc
+    | <{ if ?x then ?c1 else ?c2 end }> =>
+      let x' := eval compute in (beval st x) in
+      match x' with
+      | true => apply E_IfTrue
+      | false => apply E_IfFalse
+      end
+    | <{ while ?x do ?c0 end }> =>
+      let x' := eval compute in (beval st x) in
+      match x' with
+      | true => eapply E_WhileTrue
+      | false => apply E_WhileFalse
+      end
+    end
+  end;crush.
+
 Theorem pXY_cequiv_pYX :
   cequiv pXY pYX \/ ~cequiv pXY pYX.
 Proof.
-  (* Hint: You may want to use [t_update_permute] at some point,
-     in which case you'll probably be left with [X <> Y] as a
-     hypothesis. You can use [discriminate] to discharge this. *)
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  left. unfolder (cequiv,pXY,pYX); intuition;
+  repeat match goal with [H:ceval _ _ _|-_] => inverts H end;
+  rewrite t_update_permute;try simulate_trivial_havoc;try discriminate.
+Qed.
 
 (** **** Exercise: 4 stars, standard, optional (havoc_copy)
 
@@ -1817,10 +1842,29 @@ Definition pcopy :=
     are not, then prove that.  (Hint: You may find the [assert] tactic
     useful.) *)
 
+(* Lemma state_unify : forall T (x:string) (e1 e2:T) st1 st2,
+  (x!->e1;st1) = (x!->e2;st2) -> e1=e2.
+Admitted. *)
+(* Proof.
+  intros. split.
+  - erewrite <- t_update_eq. erewrite <- t_update_eq. *)
+
+Lemma state_unify : forall T (x:string) (st1 st2:total_map T),
+  st1=st2 -> st1 x = st2 x.
+Proof. crush. Qed.
+
 Theorem ptwice_cequiv_pcopy :
   cequiv ptwice pcopy \/ ~cequiv ptwice pcopy.
-Proof. (* FILL IN HERE *) Admitted.
-(** [] *)
+Proof.
+  right. unfolder (cequiv,ptwice,pcopy). introv H.
+  specialize (H empty_st (Y!->1; X!->2)).
+  assert (empty_st =[ havoc X; havoc Y ]=> (Y!->1; X!->2))
+    as H0 by simulate_trivial_havoc.
+  rewrite H in H0. inverts H0 as _ H1. inverts H1 as H1.
+  specialize (state_unify _ Y _ _ H1) as H'.
+  specialize (state_unify _ X _ _ H1) as H''. 
+  do 2 rewrite t_update_neq in H'';crush with try discriminate.
+Qed.
 
 (** The definition of program equivalence we are using here has some
     subtle consequences on programs that may loop forever.  What
