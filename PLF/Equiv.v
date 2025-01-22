@@ -1977,6 +1977,7 @@ Proof.
   assert ((X !-> 1) =[ p3 ]=> (Z !-> 0; X !-> 0; Z !-> 1; X !-> 1)) as H0
     by (unfold p3;simulate_trivial_havoc).
   rewrite H in H0. destruct_ceval H0. exploit_state H1. crush.
+Qed.
 
 (** **** Exercise: 5 stars, advanced, optional (p5_p6_equiv)
 
@@ -1996,9 +1997,31 @@ Definition p5 : com :=
 Definition p6 : com :=
   <{ X := 1 }>.
 
+Ltac solve_equal_states A :=
+  apply functional_extensionality; intros x;
+    destruct (String.eqb_spec x A);
+      repeat (rewrite t_update_neq;[idtac|solve[intuition]]); crush.
+
+Lemma p5_terminate_then_X_is_1 : forall st st',
+  st =[p5]=> st' -> st' = (X!->1; st).
+Proof.
+  remember p5 as p eqn:E.
+  induction 1;crush;
+    inverts E; try match goal with H:_=[havoc _]=>_|-_ => inverts H end;
+    solve_equal_states X.
+Qed.
+
 Theorem p5_p6_equiv : cequiv p5 p6.
-Proof. (* FILL IN HERE *) Admitted.
-(** [] *)
+Proof.
+  unfolds. intuition.
+  - lets H0: p5_terminate_then_X_is_1 H. crush;unfolds p6;simulate_trivial_havoc.
+  - inverts H. simpl. destruct (eqb_spec (st X) 1).
+    + asserts_rewrite <- (st=(X!->1;st));try solve_equal_states X;
+      apply E_WhileFalse;crush.
+    + apply E_WhileTrue with (X!->1;st);
+      try (rewrite <- eqb_neq in *;crush);
+      try simulate_trivial_havoc.
+Qed.
 
 End Himp.
 
