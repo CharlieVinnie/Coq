@@ -1842,16 +1842,40 @@ Definition pcopy :=
     are not, then prove that.  (Hint: You may find the [assert] tactic
     useful.) *)
 
-(* Lemma state_unify : forall T (x:string) (e1 e2:T) st1 st2,
-  (x!->e1;st1) = (x!->e2;st2) -> e1=e2.
-Admitted. *)
-(* Proof.
-  intros. split.
-  - erewrite <- t_update_eq. erewrite <- t_update_eq. *)
-
 Lemma state_unify : forall T (x:string) (st1 st2:total_map T),
   st1=st2 -> st1 x = st2 x.
 Proof. crush. Qed.
+
+Ltac state_simplify H :=
+  repeat rewrite t_update_shadow in H;
+  repeat rewrite t_update_eq in H;
+  repeat (rewrite t_update_neq in H;[idtac|solve[discriminate]]);
+  simpl in H.
+
+Ltac exploit_state H x :=
+  match type of H with
+  | ?st1 = ?st2 =>
+    let H' := fresh "H" in
+      specialize (state_unify _ x _ _ H) as H';
+      state_simplify H'
+  end.
+
+Definition vars (T:Type) (x:T) := True.
+
+Ltac get_vars st :=
+  lazymatch st with
+  | (?X!->_; ?st') => constr: ((X, (get_vars st')))
+  | _ => tt
+  (* | (?X!->_; ?st') => constr:((X, ltac:(get_vars st')))
+  | _ => tt *)
+  end.
+
+Ltac qwq H :=
+  match type of H with
+  | ?st1 = ?st2 =>
+    let x1 := get_vars st1 in
+      idtac x1
+  end.
 
 Theorem ptwice_cequiv_pcopy :
   cequiv ptwice pcopy \/ ~cequiv ptwice pcopy.
@@ -1861,9 +1885,10 @@ Proof.
   assert (empty_st =[ havoc X; havoc Y ]=> (Y!->1; X!->2))
     as H0 by simulate_trivial_havoc.
   rewrite H in H0. inverts H0 as _ H1. inverts H1 as H1.
-  specialize (state_unify _ Y _ _ H1) as H'.
-  specialize (state_unify _ X _ _ H1) as H''. 
-  do 2 rewrite t_update_neq in H'';crush with try discriminate.
+  qwq H1.
+  exploit_state H1 X.
+  exploit_state H1 Y.
+  crush.
 Qed.
 
 (** The definition of program equivalence we are using here has some
